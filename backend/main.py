@@ -375,11 +375,7 @@ async def get_consent_data(date: str):
                 f1_count, kp_count, gwl_count, matched_users = count_channel_consents(onetrust_data["identifiers"], df)
                 
                 # อัพเดต response data
-                users_with_profile = len(matched_users[
-                    matched_users['f1_profile_id'].notna() |
-                    matched_users['kp_profile_id'].notna() |
-                    matched_users['gwl_profile_id'].notna()
-                ]) if matched_users is not None else 0
+                users_with_profile = f1_count + kp_count  # เปลี่ยนวิธีคำนวณ dropoff ให้ใช้แค่ F1 + KP
                 
                 response_data.update({
                     "f1_channel_consents": f1_count,
@@ -397,6 +393,33 @@ async def get_consent_data(date: str):
         
     except Exception as e:
         print(f"Debug - เกิดข้อผิดพลาด: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/historical-data")
+async def get_historical_data(start_date: str, end_date: str):
+    try:
+        # แปลงวันที่เป็น datetime
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+        end = datetime.strptime(end_date, "%Y-%m-%d")
+        
+        # สร้าง list เก็บข้อมูลแต่ละวัน
+        results = []
+        
+        # วนลูปดึงข้อมูลทีละวัน
+        current = start
+        while current <= end:
+            date_str = current.strftime("%Y-%m-%d")
+            try:
+                # ใช้ฟังก์ชัน get_consent_data เดิม
+                data = await get_consent_data(date_str)
+                results.append(data)
+            except Exception as e:
+                print(f"Error fetching data for {date_str}: {str(e)}")
+            current += timedelta(days=1)
+        
+        return results
+    except Exception as e:
+        print(f"Error in historical data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/fetch-data/manual")

@@ -13,7 +13,14 @@
   <body class="bg-gray-50">
     <div id="root"></div>
     <script type="text/babel">
-      const { useState } = React;
+      // Global utility functions
+      function getTodayDate() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
 
       function formatDate(date) {
         const d = new Date(date);
@@ -22,6 +29,11 @@
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       }
+    </script>
+    <script type="text/babel" src="dashboard.js"></script>
+    <script type="text/babel" src="table.js"></script>
+    <script type="text/babel">
+      const { useState } = React;
 
       function StatCard({ title, value, description, color }) {
         return (
@@ -35,8 +47,8 @@
         );
       }
 
-      function App() {
-        const [date, setDate] = useState(formatDate(new Date()));
+      function DashboardContainer() {
+        const [date, setDate] = useState(getTodayDate());
         const [loading, setLoading] = useState(false);
         const [data, setData] = useState(null);
         const [error, setError] = useState(null);
@@ -63,7 +75,7 @@
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                max={formatDate(new Date())}
+                max={getTodayDate()}
                 className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -141,6 +153,42 @@
                 </div>
               </div>
             )}
+          </div>
+        );
+      }
+
+      function App() {
+        const [view, setView] = useState('dashboard');
+
+        return (
+          <div className="container mx-auto px-4 py-8 max-w-6xl">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-3xl font-bold">Consent Dashboard</h1>
+              <div className="flex gap-4">
+                <button
+                  className={`px-4 py-2 rounded-md ${
+                    view === 'dashboard'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  onClick={() => setView('dashboard')}
+                >
+                  Dashboard
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-md ${
+                    view === 'table'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  onClick={() => setView('table')}
+                >
+                  Table View
+                </button>
+              </div>
+            </div>
+
+            {view === 'dashboard' ? <DashboardContainer /> : <TableContainer />}
           </div>
         );
       }
