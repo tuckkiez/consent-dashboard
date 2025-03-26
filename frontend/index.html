@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Consent Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div id="root"></div>
+    <script type="text/babel">
+      const { useState } = React;
+
+      function formatDate(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function StatCard({ title, value, description, color }) {
+        return (
+          <div className={`bg-white rounded-lg shadow p-6 ${color}`}>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+            <p className="text-3xl font-bold text-blue-600">{value}</p>
+            {description && (
+              <p className="text-sm text-gray-600 mt-2">{description}</p>
+            )}
+          </div>
+        );
+      }
+
+      function App() {
+        const [date, setDate] = useState(formatDate(new Date()));
+        const [loading, setLoading] = useState(false);
+        const [data, setData] = useState(null);
+        const [error, setError] = useState(null);
+
+        const fetchData = async () => {
+          try {
+            setLoading(true);
+            setError(null);
+            const response = await axios.get(`http://localhost:8001/api/consent-data/${date}`);
+            setData(response.data);
+          } catch (err) {
+            setError(err.message || 'An error occurred while fetching data');
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        return (
+          <div className="container mx-auto px-4 py-8 max-w-6xl">
+            <h1 className="text-3xl font-bold mb-8">Consent Dashboard</h1>
+            
+            <div className="flex gap-4 mb-8">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={formatDate(new Date())}
+                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={fetchData}
+                disabled={loading}
+                className={`px-6 py-2 rounded-md text-white font-medium ${
+                  loading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                {loading ? 'Loading...' : 'Fetch Data'}
+              </button>
+            </div>
+
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {error}
+              </div>
+            )}
+
+            {loading && (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+            )}
+
+            {data && !loading && (
+              <div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  {/* Total Consents */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Total Consents</h3>
+                    <p className="text-3xl font-bold text-blue-600" id="totalConsents">{data.total_consents}</p>
+                  </div>
+                  {/* Privacy Policy Consents */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Privacy Policy Consents</h3>
+                    <p className="text-3xl font-bold text-green-600" id="privacyPolicyConsents">{data.privacy_policy_consents}</p>
+                  </div>
+                  {/* Marketing Consents */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Marketing Consents</h3>
+                    <p className="text-3xl font-bold text-purple-600" id="marketingConsents">{data.marketing_consents}</p>
+                    <p className="text-sm text-gray-600 mt-2" id="marketingConsentPercentageText">
+                      <span id="marketingConsentPercentage">{data.marketing_consent_percentage.toFixed(2)}</span>% of Total Consents
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* F1 Channel */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">F1 Channel</h3>
+                    <p className="text-3xl font-bold text-indigo-600" id="f1ChannelConsents">{data.f1_channel_consents}</p>
+                  </div>
+                  {/* KP Channel */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">KP Channel</h3>
+                    <p className="text-3xl font-bold text-pink-600" id="kpChannelConsents">{data.kp_channel_consents}</p>
+                  </div>
+                  {/* GWL Channel */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">GWL Channel</h3>
+                    <p className="text-3xl font-bold text-yellow-600" id="gwlChannelConsents">{data.gwl_channel_consents}</p>
+                  </div>
+                  {/* Dropoff */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Dropoff</h3>
+                    <p className="text-3xl font-bold text-red-600" id="dropoffCount">{data.dropoff_count}</p>
+                    <p className="text-sm text-gray-600 mt-2" id="dropoffPercentageText">
+                      <span id="dropoffPercentage">{data.dropoff_percentage.toFixed(2)}</span>% of Total Consents
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
