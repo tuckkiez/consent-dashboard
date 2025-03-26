@@ -57,7 +57,7 @@
           try {
             setLoading(true);
             setError(null);
-            const response = await axios.get(`http://localhost:8001/api/consent-data/${date}`);
+            const response = await axios.get(`http://localhost:8000/api/consent-data/${date}`);
             setData(response.data);
           } catch (err) {
             setError(err.message || 'An error occurred while fetching data');
@@ -68,8 +68,6 @@
 
         return (
           <div className="container mx-auto px-4 py-8 max-w-6xl">
-            <h1 className="text-3xl font-bold mb-8">Consent Dashboard</h1>
-            
             <div className="flex gap-4 mb-8">
               <input
                 type="date"
