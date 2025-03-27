@@ -14,6 +14,7 @@ import asyncio
 from dotenv import load_dotenv
 from scheduled_tasks import start_scheduler
 import logging
+from database import get_consent_data, save_consent_data, init_db
 
 load_dotenv()
 
@@ -338,8 +339,28 @@ async def fetch_onetrust_data(date: str):
     }
 
 @app.get("/api/consent-data/{date}")
-async def get_consent_data(date: str):
+async def get_consent_data_endpoint(date: str):
     try:
+        # เช็คข้อมูลใน database ก่อน
+        db_data = get_consent_data(date)
+        if db_data and len(db_data) > 0:
+            # แปลงชื่อ field จาก database เป็นชื่อที่ใช้ใน ConsentStats
+            data = db_data[0]
+            response_data = {
+                "total_consents": data["total_count"],
+                "privacy_policy_consents": data["privacy_policy_count"],
+                "marketing_consents": data["marketing_count"],
+                "marketing_consent_percentage": data["marketing_consent_percentage"],
+                "f1_channel_consents": data["f1_channel_count"],
+                "kp_channel_consents": data["kp_channel_count"],
+                "gwl_channel_consents": data["gwl_channel_count"],
+                "dropoff_count": data["dropoff_count"],
+                "dropoff_percentage": data["dropoff_percentage"],
+                "date": data["date"]
+            }
+            return ConsentStats(**response_data)
+        
+        # ถ้าไม่มีข้อมูลใน database ให้ดึงจาก API
         print(f"Debug - เริ่มดึงข้อมูลวันที่: {date}")
         
         # ดึงข้อมูลจาก OneTrust API
@@ -389,6 +410,20 @@ async def get_consent_data(date: str):
             print(f"Debug - เกิดข้อผิดพลาดในการโหลด CSV: {str(e)}")
             print("Debug - จะใช้ค่าเริ่มต้นแทน")
         
+        # เก็บข้อมูลลง database
+        db_data = {
+            "total_count": response_data["total_consents"],
+            "privacy_policy_count": response_data["privacy_policy_consents"],
+            "marketing_count": response_data["marketing_consents"],
+            "marketing_consent_percentage": response_data["marketing_consent_percentage"],
+            "f1_channel_count": response_data["f1_channel_consents"],
+            "kp_channel_count": response_data["kp_channel_consents"],
+            "gwl_channel_count": response_data["gwl_channel_consents"],
+            "dropoff_count": response_data["dropoff_count"],
+            "dropoff_percentage": response_data["dropoff_percentage"]
+        }
+        save_consent_data(date, db_data)
+        
         return ConsentStats(**response_data)
         
     except Exception as e:
@@ -411,7 +446,7 @@ async def get_historical_data(start_date: str, end_date: str):
             date_str = current.strftime("%Y-%m-%d")
             try:
                 # ใช้ฟังก์ชัน get_consent_data เดิม
-                data = await get_consent_data(date_str)
+                data = await get_consent_data_endpoint(date_str)
                 results.append(data)
             except Exception as e:
                 print(f"Error fetching data for {date_str}: {str(e)}")
@@ -437,6 +472,7 @@ async def manual_fetch():
 @app.on_event("startup")
 async def startup_event():
     """Start the scheduler when the app starts"""
+    init_db()  # Initialize database
     start_scheduler()
 
 if __name__ == "__main__":
