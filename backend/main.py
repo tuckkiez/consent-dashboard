@@ -14,7 +14,8 @@ import asyncio
 from dotenv import load_dotenv
 from scheduled_tasks import start_scheduler
 import logging
-from database import get_consent_data, save_consent_data, init_db
+from database import get_consent_data, save_consent_data, init_db, get_all_consent_data, add_sample_data
+import database
 
 load_dotenv()
 
@@ -339,31 +340,17 @@ async def fetch_onetrust_data(date: str):
     }
 
 @app.get("/api/consent-data/{date}")
-async def get_consent_data_endpoint(date: str):
+async def get_consent_data_by_date(date: str):
+    """Get consent data for a specific date"""
     try:
         # เช็คข้อมูลใน database ก่อน
-        db_data = get_consent_data(date)
-        if db_data and len(db_data) > 0:
-            # แปลงชื่อ field จาก database เป็นชื่อที่ใช้ใน ConsentStats
-            data = db_data[0]
-            response_data = {
-                "total_consents": data["total_count"],
-                "privacy_policy_consents": data["privacy_policy_count"],
-                "marketing_consents": data["marketing_count"],
-                "marketing_consent_percentage": data["marketing_consent_percentage"],
-                "f1_channel_consents": data["f1_channel_count"],
-                "kp_channel_consents": data["kp_channel_count"],
-                "gwl_channel_consents": data["gwl_channel_count"],
-                "dropoff_count": data["dropoff_count"],
-                "dropoff_percentage": data["dropoff_percentage"],
-                "date": data["date"]
-            }
-            return ConsentStats(**response_data)
-        
+        stored_data = database.get_consent_data(date)
+        if stored_data and len(stored_data) > 0:
+            print(f"Found data in database for {date}")
+            return ConsentStats(**stored_data[0])  # Return first row since we're querying for a specific date
+            
+        print(f"No data in database for {date}, fetching from API")
         # ถ้าไม่มีข้อมูลใน database ให้ดึงจาก API
-        print(f"Debug - เริ่มดึงข้อมูลวันที่: {date}")
-        
-        # ดึงข้อมูลจาก OneTrust API
         onetrust_data = await fetch_onetrust_data(date)
         total_count = onetrust_data["total_count"]
         
@@ -411,24 +398,26 @@ async def get_consent_data_endpoint(date: str):
             print("Debug - จะใช้ค่าเริ่มต้นแทน")
         
         # เก็บข้อมูลลง database
-        db_data = {
-            "total_count": response_data["total_consents"],
-            "privacy_policy_count": response_data["privacy_policy_consents"],
-            "marketing_count": response_data["marketing_consents"],
-            "marketing_consent_percentage": response_data["marketing_consent_percentage"],
-            "f1_channel_count": response_data["f1_channel_consents"],
-            "kp_channel_count": response_data["kp_channel_consents"],
-            "gwl_channel_count": response_data["gwl_channel_consents"],
-            "dropoff_count": response_data["dropoff_count"],
-            "dropoff_percentage": response_data["dropoff_percentage"]
-        }
-        save_consent_data(date, db_data)
+        database.save_consent_data(response_data, date)
         
         return ConsentStats(**response_data)
         
     except Exception as e:
         print(f"Debug - เกิดข้อผิดพลาด: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/all-consent-data")
+async def get_all_consent_data():
+    """Get all consent data from database"""
+    try:
+        print("Fetching all consent data...")
+        # ดึงข้อมูลทั้งหมดจาก database
+        data = database.get_all_consent_data()
+        print("Data:", data)
+        return data
+    except Exception as e:
+        print(f"Error fetching all consent data: {str(e)}")
+        return []  # Return empty list instead of raising error
 
 @app.get("/api/historical-data")
 async def get_historical_data(start_date: str, end_date: str):
@@ -446,7 +435,7 @@ async def get_historical_data(start_date: str, end_date: str):
             date_str = current.strftime("%Y-%m-%d")
             try:
                 # ใช้ฟังก์ชัน get_consent_data เดิม
-                data = await get_consent_data_endpoint(date_str)
+                data = await get_consent_data_by_date(date_str)
                 results.append(data)
             except Exception as e:
                 print(f"Error fetching data for {date_str}: {str(e)}")
@@ -471,8 +460,8 @@ async def manual_fetch():
 
 @app.on_event("startup")
 async def startup_event():
-    """Start the scheduler when the app starts"""
-    init_db()  # Initialize database
+    """Initialize database and start scheduler"""
+    init_db()
     start_scheduler()
 
 if __name__ == "__main__":

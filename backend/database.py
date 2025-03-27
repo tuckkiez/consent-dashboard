@@ -6,24 +6,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 def init_db():
-    """Initialize the database"""
+    """Initialize the database with required tables"""
     conn = sqlite3.connect('consent_data.db')
     c = conn.cursor()
     
-    # Create table for daily consent data
+    # Drop existing table if exists
+    c.execute('DROP TABLE IF EXISTS consent_data')
+    
+    # Create table
     c.execute('''
-        CREATE TABLE IF NOT EXISTS consent_data (
+        CREATE TABLE consent_data (
             date TEXT PRIMARY KEY,
-            total_count INTEGER,
-            privacy_policy_count INTEGER,
-            marketing_count INTEGER,
+            total_consents INTEGER,
+            privacy_policy_consents INTEGER,
+            marketing_consents INTEGER,
             marketing_consent_percentage REAL,
-            f1_channel_count INTEGER,
-            kp_channel_count INTEGER,
-            gwl_channel_count INTEGER,
+            f1_channel_consents INTEGER,
+            kp_channel_consents INTEGER,
+            gwl_channel_consents INTEGER,
             dropoff_count INTEGER,
             dropoff_percentage REAL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT
         )
     ''')
     
@@ -31,48 +34,53 @@ def init_db():
     conn.close()
     logger.info("Database initialized")
 
-def save_consent_data(date: str, data: dict):
-    """Save consent data for a specific date"""
-    conn = sqlite3.connect('consent_data.db')
-    c = conn.cursor()
-    
+def save_consent_data(data, date):
+    """Save consent data to database"""
+    conn = None
     try:
-        c.execute('''
+        conn = sqlite3.connect('consent_data.db')
+        cursor = conn.cursor()
+        
+        # เตรียมข้อมูลสำหรับบันทึก
+        values = (
+            date,
+            int(data.get('total_consents', 0)),
+            int(data.get('privacy_policy_consents', 0)),
+            int(data.get('marketing_consents', 0)),
+            float(data.get('marketing_consent_percentage', 0)),
+            int(data.get('f1_channel_consents', 0)),
+            int(data.get('kp_channel_consents', 0)),
+            int(data.get('gwl_channel_consents', 0)),
+            int(data.get('dropoff_count', 0)),
+            float(data.get('dropoff_percentage', 0)),
+            datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
+        
+        # บันทึกข้อมูล
+        cursor.execute("""
             INSERT OR REPLACE INTO consent_data (
                 date,
-                total_count,
-                privacy_policy_count,
-                marketing_count,
+                total_consents,
+                privacy_policy_consents,
+                marketing_consents,
                 marketing_consent_percentage,
-                f1_channel_count,
-                kp_channel_count,
-                gwl_channel_count,
+                f1_channel_consents,
+                kp_channel_consents,
+                gwl_channel_consents,
                 dropoff_count,
-                dropoff_percentage
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            date,
-            data.get('total_count', 0),
-            data.get('privacy_policy_count', 0),
-            data.get('marketing_count', 0),
-            data.get('marketing_consent_percentage', 0),
-            data.get('f1_channel_count', 0),
-            data.get('kp_channel_count', 0),
-            data.get('gwl_channel_count', 0),
-            data.get('dropoff_count', 0),
-            data.get('dropoff_percentage', 0)
-        ))
+                dropoff_percentage,
+                created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, values)
         
         conn.commit()
-        logger.info(f"Saved consent data for {date}")
-        return True
-        
+        print(f"บันทึกข้อมูลสำหรับวันที่ {date} สำเร็จ")
     except Exception as e:
-        logger.error(f"Error saving consent data for {date}: {str(e)}")
-        return False
-        
+        print(f"Error saving consent data: {str(e)}")
+        raise e
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 def get_consent_data(start_date: str, end_date: str = None):
     """Get consent data for a date range"""
@@ -82,43 +90,57 @@ def get_consent_data(start_date: str, end_date: str = None):
     try:
         if end_date:
             c.execute('''
-                SELECT * FROM consent_data 
+                SELECT 
+                    date,
+                    total_consents,
+                    privacy_policy_consents,
+                    marketing_consents,
+                    marketing_consent_percentage,
+                    f1_channel_consents,
+                    kp_channel_consents,
+                    gwl_channel_consents,
+                    dropoff_count,
+                    dropoff_percentage,
+                    created_at
+                FROM consent_data 
                 WHERE date BETWEEN ? AND ?
                 ORDER BY date DESC
             ''', (start_date, end_date))
         else:
             c.execute('''
-                SELECT * FROM consent_data 
+                SELECT 
+                    date,
+                    total_consents,
+                    privacy_policy_consents,
+                    marketing_consents,
+                    marketing_consent_percentage,
+                    f1_channel_consents,
+                    kp_channel_consents,
+                    gwl_channel_consents,
+                    dropoff_count,
+                    dropoff_percentage,
+                    created_at
+                FROM consent_data 
                 WHERE date = ?
+                ORDER BY date DESC
             ''', (start_date,))
-            
-        columns = [description[0] for description in c.description]
+        
         rows = c.fetchall()
+        columns = [
+            'date',
+            'total_consents',
+            'privacy_policy_consents',
+            'marketing_consents',
+            'marketing_consent_percentage',
+            'f1_channel_consents',
+            'kp_channel_consents',
+            'gwl_channel_consents',
+            'dropoff_count',
+            'dropoff_percentage',
+            'created_at'
+        ]
         
-        result = []
-        for row in rows:
-            # แปลงค่าให้เป็น type ที่ถูกต้อง
-            row_dict = {}
-            for i, value in enumerate(row):
-                if columns[i] in ['total_count', 'privacy_policy_count', 'marketing_count', 
-                                'f1_channel_count', 'kp_channel_count', 'gwl_channel_count',
-                                'dropoff_count']:
-                    if isinstance(value, bytes):
-                        # แปลง bytes เป็น int (little-endian)
-                        value = int.from_bytes(value, byteorder='little')
-                    row_dict[columns[i]] = value if value is not None else 0
-                elif columns[i] in ['marketing_consent_percentage', 'dropoff_percentage']:
-                    row_dict[columns[i]] = float(value) if value is not None else 0.0
-                else:
-                    row_dict[columns[i]] = value
-            result.append(row_dict)
-            
-        logger.info(f"ดึงข้อมูลจาก database สำหรับวันที่ {start_date}: {len(result)} รายการ")
-        return result
-        
-    except Exception as e:
-        logger.error(f"Error getting consent data: {str(e)}")
-        return []
+        return [dict(zip(columns, row)) for row in rows]
         
     finally:
         conn.close()
@@ -157,3 +179,98 @@ def get_missing_dates(start_date: str, end_date: str):
         
     finally:
         conn.close()
+
+def get_db_connection():
+    return sqlite3.connect('consent_data.db')
+
+def get_all_consent_data():
+    """Get all consent data from database"""
+    conn = None
+    try:
+        conn = sqlite3.connect('consent_data.db')
+        cursor = conn.cursor()
+        # ตรวจสอบว่าตารางมีอยู่จริง
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='consent_data'
+        """)
+        if not cursor.fetchone():
+            return []
+            
+        cursor.execute("""
+            SELECT 
+                date,
+                total_consents,
+                privacy_policy_consents,
+                marketing_consents,
+                marketing_consent_percentage,
+                f1_channel_consents,
+                kp_channel_consents,
+                gwl_channel_consents,
+                dropoff_count,
+                dropoff_percentage,
+                created_at
+            FROM consent_data
+            ORDER BY date DESC
+        """)
+        data = cursor.fetchall()
+        
+        # แปลงข้อมูลเป็น list of dict
+        result = []
+        for row in data:
+            result.append({
+                'date': row[0],
+                'total_consents': row[1],
+                'privacy_policy_consents': row[2],
+                'marketing_consents': row[3],
+                'marketing_consent_percentage': float(row[4]) if row[4] else 0,
+                'f1_channel_consents': row[5],
+                'kp_channel_consents': row[6],
+                'gwl_channel_consents': row[7],
+                'dropoff_count': row[8],
+                'dropoff_percentage': float(row[9]) if row[9] else 0
+            })
+        return result
+    except Exception as e:
+        print(f"Error in get_all_consent_data: {str(e)}")
+        return []  # ถ้าเกิด error ให้ return list ว่าง
+    finally:
+        if conn:
+            conn.close()
+
+def add_sample_data():
+    """Add sample data for testing"""
+    conn = None
+    try:
+        conn = sqlite3.connect('consent_data.db')
+        cursor = conn.cursor()
+        
+        # เพิ่มข้อมูลตัวอย่าง
+        sample_data = [
+            ('2025-03-25', 85, 85, 65, 76.47, 10, 5, 2, 5, 5.88),
+            ('2025-03-26', 90, 90, 70, 77.78, 12, 6, 3, 8, 8.89),
+            ('2025-03-27', 93, 93, 72, 77.42, 15, 7, 4, 10, 10.75)
+        ]
+        
+        cursor.executemany("""
+            INSERT OR REPLACE INTO consent_data (
+                date,
+                total_consents,
+                privacy_policy_consents,
+                marketing_consents,
+                marketing_consent_percentage,
+                f1_channel_consents,
+                kp_channel_consents,
+                gwl_channel_consents,
+                dropoff_count,
+                dropoff_percentage
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, sample_data)
+        
+        conn.commit()
+        print("Sample data added successfully")
+    except Exception as e:
+        print(f"Error adding sample data: {str(e)}")
+    finally:
+        if conn:
+            conn.close()
