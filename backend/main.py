@@ -246,17 +246,41 @@ def count_channel_consents(identifiers, df):
     
     return f1_count, kp_count, gwl_count, matched_users
 
+async def get_onetrust_token():
+    """Get access token from OneTrust"""
+    try:
+        url = "https://app-apac.onetrust.com/api/access/v1/oauth/token"
+        data = {
+            "grant_type": "client_credentials",
+            "client_id": "93b83b2845774fa2a02e5eb1ee6925e3",
+            "client_secret": "a8jcHqPNGdKS44IBGr9xx2BwXTAX2EkP"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data)
+            response.raise_for_status()
+            
+            token_data = response.json()
+            return token_data.get("access_token")
+            
+    except Exception as e:
+        logger.error(f"Error getting OneTrust token: {str(e)}")
+        raise
+
 async def fetch_onetrust_data(date: str):
     """ดึงข้อมูล consent จาก OneTrust API"""
-    if not ONETRUST_API_TOKEN:
-        raise HTTPException(status_code=500, detail="ไม่พบ OneTrust API token")
+    # ขอ token ก่อน
+    token = await get_onetrust_token()
+    
+    if not token:
+        raise HTTPException(status_code=500, detail="ไม่สามารถขอ token ได้")
 
     timeout = httpx.Timeout(30.0)
     limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
     
     async with httpx.AsyncClient(timeout=timeout, limits=limits) as client:
         headers = {
-            "Authorization": f"Bearer {ONETRUST_API_TOKEN}",
+            "Authorization": f"Bearer {token}",
             "Accept": "application/json"
         }
         url = "https://app-apac.onetrust.com/api/consentmanager/v1/datasubjects/profiles"
@@ -338,141 +362,6 @@ async def fetch_onetrust_data(date: str):
         "marketing_count": marketing_count,
         "identifiers": identifiers
     }
-
-async def fetch_onetrust_data(date: str):
-    """Fetch data from OneTrust API for a specific date"""
-    try:
-        # คำนวณ timestamp เริ่มต้นและสิ้นสุดของวัน
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
-        start_of_day = int(date_obj.replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)
-        end_of_day = int(date_obj.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp() * 1000)
-        
-        print(f"Debug - Fetching data for {date} (start: {start_of_day}, end: {end_of_day})")
-        
-        # สร้าง payload สำหรับ API request
-        payload = {
-            "predicates": [
-                {
-                    "type": "date",
-                    "value": start_of_day,
-                    "operator": "ge",
-                    "field": "dateCreated"
-                },
-                {
-                    "type": "date",
-                    "value": end_of_day,
-                    "operator": "le",
-                    "field": "dateCreated"
-                },
-                {
-                    "type": "string",
-                    "value": "ACTIVE",
-                    "operator": "eq",
-                    "field": "status"
-                }
-            ],
-            "paging": {
-                "size": 1,  # เปลี่ยนเป็น 1 เพื่อดูจำนวนทั้งหมด
-                "page": 0
-            },
-            "sort": [
-                {
-                    "field": "dateCreated",
-                    "direction": "desc"
-                }
-            ]
-        }
-
-        # ส่ง request ไปยัง OneTrust API
-        async with httpx.AsyncClient() as session:
-            async with session.post(
-                'https://app.onetrust.com/api/consentmanager/v2/datasubjects/find',
-                headers={
-                    'Content-Type': 'application/json',
-                    'Authorization': ONETRUST_API_KEY
-                },
-                json=payload
-            ) as response:
-                print(f"Debug - API Response Status: {response.status}")
-                data = await response.json()
-                print(f"Debug - Raw API Response: {json.dumps(data, indent=2)}")
-
-                # เก็บข้อมูลจำนวนทั้งหมด
-                total_count = data.get('totalElements', 0)
-                
-                # ถ้ามีข้อมูล ดึง identifiers ทั้งหมด
-                identifiers = []
-                if total_count > 0:
-                    # อัพเดท payload เพื่อดึงข้อมูลทั้งหมด
-                    payload['paging']['size'] = total_count
-                    async with session.post(
-                        'https://app.onetrust.com/api/consentmanager/v2/datasubjects/find',
-                        headers={
-                            'Content-Type': 'application/json',
-                            'Authorization': ONETRUST_API_KEY
-                        },
-                        json=payload
-                    ) as full_response:
-                        full_data = await full_response.json()
-                        identifiers = [
-                            item.get('identifier')
-                            for item in full_data.get('content', [])
-                            if item.get('identifier')
-                        ]
-
-                # นับจำนวน consent ที่มี privacy policy และ marketing
-                privacy_policy_count = 0
-                marketing_count = 0
-                
-                if total_count > 0:
-                    # ดึงข้อมูล consent purposes สำหรับ identifiers ทั้งหมด
-                    purposes_payload = {
-                        "predicates": [
-                            {
-                                "type": "string",
-                                "value": identifiers,
-                                "operator": "in",
-                                "field": "identifier"
-                            }
-                        ],
-                        "paging": {
-                            "size": total_count,
-                            "page": 0
-                        }
-                    }
-                    
-                    async with session.post(
-                        'https://app.onetrust.com/api/consentmanager/v2/datasubjects/purpose/find',
-                        headers={
-                            'Content-Type': 'application/json',
-                            'Authorization': ONETRUST_API_KEY
-                        },
-                        json=purposes_payload
-                    ) as purposes_response:
-                        purposes_data = await purposes_response.json()
-                        print(f"Debug - Raw Purposes Response: {json.dumps(purposes_data, indent=2)}")
-                        
-                        # วนลูปนับจำนวน consent ตาม purpose
-                        for item in purposes_data.get('content', []):
-                            purposes = item.get('purposes', [])
-                            for purpose in purposes:
-                                if purpose.get('status') == 'ACTIVE':
-                                    purpose_id = purpose.get('id')
-                                    if purpose_id == PRIVACY_POLICY_PURPOSE_ID:
-                                        privacy_policy_count += 1
-                                    elif purpose_id == MARKETING_PURPOSE_ID:
-                                        marketing_count += 1
-
-                return {
-                    "total_count": total_count,
-                    "privacy_policy_count": privacy_policy_count,
-                    "marketing_count": marketing_count,
-                    "identifiers": identifiers
-                }
-
-    except Exception as e:
-        print(f"Error fetching OneTrust data: {str(e)}")
-        raise
 
 async def fetch_consent_data(date: str):
     """ดึงข้อมูล consent จาก OneTrust API และบันทึกข้อมูล"""
