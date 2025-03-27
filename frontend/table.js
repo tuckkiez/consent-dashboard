@@ -14,7 +14,7 @@ function TableView() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [displayCount, setDisplayCount] = useState(10);
+    const [displayCount, setDisplayCount] = useState(20);
     const [currentPage, setCurrentPage] = useState(1);
 
     const minDate = "2025-02-27";

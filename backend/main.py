@@ -16,6 +16,7 @@ from scheduled_tasks import start_scheduler
 import logging
 from database import get_consent_data, save_consent_data, init_db, get_all_consent_data, add_sample_data
 import database
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 load_dotenv()
 
@@ -412,6 +413,39 @@ async def fetch_consent_data(date: str):
         print("Debug - จะใช้ค่าเริ่มต้นแทน")
     
     return response_data
+
+async def daily_data_fetch():
+    """ทำงานทุกวันตอนเที่ยงคืนเพื่อโหลด CSV และ fetch ข้อมูลของวันก่อนหน้า"""
+    today = datetime.now()
+    yesterday = today - timedelta(days=1)
+    
+    today_str = today.strftime("%Y-%m-%d")
+    yesterday_str = yesterday.strftime("%Y-%m-%d")
+    
+    print(f"Debug - เริ่มต้น daily data fetch")
+    print(f"Debug - โหลด CSV ของวันที่ {today_str}")
+    print(f"Debug - fetch ข้อมูล consent ของวันที่ {yesterday_str}")
+    
+    try:
+        # 1. โหลด CSV ของวันนี้
+        await ensure_user_data_exists(today_str)
+        
+        # 2. fetch ข้อมูล consent ของเมื่อวาน
+        await fetch_consent_data(yesterday_str)
+        
+        print("Debug - daily data fetch สำเร็จ")
+    except Exception as e:
+        print(f"Error in daily data fetch: {str(e)}")
+
+def start_scheduler():
+    """เริ่มต้น scheduler สำหรับ daily data fetch"""
+    scheduler = AsyncIOScheduler()
+    
+    # ตั้งให้ทำงานทุกวันเวลาเที่ยงคืน
+    scheduler.add_job(daily_data_fetch, 'cron', hour=0, minute=0)
+    
+    scheduler.start()
+    print("Debug - Scheduler started")
 
 @app.get("/api/consent-data/{date}")
 async def get_consent_data(date: str):
