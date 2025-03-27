@@ -29,7 +29,8 @@ function TableView() {
         for (let date = start; date <= end; date.setDate(date.getDate() + 1)) {
             dates.push(new Date(date).toISOString().split('T')[0]);
         }
-        return dates;
+        // เรียงวันที่จากใหม่ไปเก่า
+        return dates.reverse();
     };
 
     useEffect(() => {
@@ -48,7 +49,7 @@ function TableView() {
             // สร้าง map ของข้อมูลที่มีอยู่
             const dataMap = new Map(response.data.map(item => [item.date, item]));
             
-            // สร้างข้อมูลสำหรับทุกวัน
+            // สร้างข้อมูลสำหรับทุกวัน เรียงจากใหม่ไปเก่า
             const allDates = generateDateRange();
             const fullData = allDates.map(date => {
                 return dataMap.get(date) || {
@@ -103,6 +104,45 @@ function TableView() {
     const totalPages = Math.ceil(data.length / displayCount);
     const startIndex = (currentPage - 1) * displayCount;
     const displayData = data.slice(startIndex, startIndex + displayCount);
+
+    // เพิ่มฟังก์ชันเช็คว่าควรแสดงปุ่ม Fetch หรือไม่
+    const shouldShowFetchButton = (date) => {
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        // วันปัจจุบันแสดงปุ่มเสมอ
+        if (date === today) {
+            return 'today';
+        }
+        
+        // วันก่อนหน้า แสดงปุ่มเฉพาะเมื่อยังไม่มีข้อมูล
+        if (date === yesterdayStr && !data.find(row => row.date === date)?.total_consents) {
+            return 'yesterday';
+        }
+
+        // วันอื่นๆ แสดงปุ่มเมื่อไม่มีข้อมูล
+        if (!data.find(row => row.date === date)?.total_consents) {
+            return 'other';
+        }
+
+        return null;
+    };
+
+    // เพิ่มฟังก์ชันสำหรับข้อความบนปุ่ม
+    const getFetchButtonText = (buttonType, isLoading) => {
+        if (isLoading) return 'Loading...';
+        
+        switch (buttonType) {
+            case 'today':
+                return 'Refresh Now';
+            case 'yesterday':
+                return 'Fetch Yesterday';
+            default:
+                return 'Fetch';
+        }
+    };
 
     if (error) {
         return (
@@ -174,35 +214,44 @@ function TableView() {
                         </tr>
                     </thead>
                     <tbody>
-                        {displayData.map((row, index) => (
-                            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                                <td className="px-4 py-2 border">{formatDate(row.date)}</td>
-                                <td className="px-4 py-2 border text-right">{row.total_consents || '-'}</td>
-                                <td className="px-4 py-2 border text-right">{row.privacy_policy_consents || '-'}</td>
-                                <td className="px-4 py-2 border text-right">{row.marketing_consents || '-'}</td>
-                                <td className="px-4 py-2 border text-right">
-                                    {row.marketing_consent_percentage ? `${row.marketing_consent_percentage.toFixed(2)}%` : '-'}
-                                </td>
-                                <td className="px-4 py-2 border text-right">{row.f1_channel_consents || '-'}</td>
-                                <td className="px-4 py-2 border text-right">{row.kp_channel_consents || '-'}</td>
-                                <td className="px-4 py-2 border text-right">{row.gwl_channel_consents || '-'}</td>
-                                <td className="px-4 py-2 border text-right">{row.dropoff_count || '-'}</td>
-                                <td className="px-4 py-2 border text-right">
-                                    {row.dropoff_percentage ? `${row.dropoff_percentage.toFixed(2)}%` : '-'}
-                                </td>
-                                <td className="px-4 py-2 border text-center">
-                                    {!row.total_consents && (
-                                        <button
-                                            onClick={() => fetchSingleDate(row.date)}
-                                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                                            disabled={loading}
-                                        >
-                                            {loading ? 'Loading...' : 'Fetch'}
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
+                        {displayData.map((row, index) => {
+                            const buttonType = shouldShowFetchButton(row.date);
+                            return (
+                                <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
+                                    <td className="px-4 py-2 border">{formatDate(row.date)}</td>
+                                    <td className="px-4 py-2 border text-right">{row.total_consents || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">{row.privacy_policy_consents || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">{row.marketing_consents || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">
+                                        {row.marketing_consent_percentage ? `${row.marketing_consent_percentage.toFixed(2)}%` : '-'}
+                                    </td>
+                                    <td className="px-4 py-2 border text-right">{row.f1_channel_consents || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">{row.kp_channel_consents || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">{row.gwl_channel_consents || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">{row.dropoff_count || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">
+                                        {row.dropoff_percentage ? `${row.dropoff_percentage.toFixed(2)}%` : '-'}
+                                    </td>
+                                    <td className="px-4 py-2 border text-center">
+                                        {buttonType && (
+                                            <button
+                                                onClick={() => fetchSingleDate(row.date)}
+                                                className={`px-3 py-1 text-white rounded disabled:opacity-50 ${
+                                                    buttonType === 'today'
+                                                        ? 'bg-green-500 hover:bg-green-600'  // วันปัจจุบัน
+                                                        : buttonType === 'yesterday'
+                                                        ? 'bg-yellow-500 hover:bg-yellow-600'  // วันก่อนหน้า
+                                                        : 'bg-blue-500 hover:bg-blue-600'  // วันอื่นๆ
+                                                }`}
+                                                disabled={loading}
+                                            >
+                                                {getFetchButtonText(buttonType, loading)}
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

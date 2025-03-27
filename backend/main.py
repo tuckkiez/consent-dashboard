@@ -339,11 +339,203 @@ async def fetch_onetrust_data(date: str):
         "identifiers": identifiers
     }
 
-@app.get("/api/consent-data/{date}")
-async def get_consent_data_by_date(date: str):
-    """Get consent data for a specific date"""
+async def fetch_onetrust_data(date: str):
+    """Fetch data from OneTrust API for a specific date"""
     try:
-        # เช็คข้อมูลใน database ก่อน
+        # คำนวณ timestamp เริ่มต้นและสิ้นสุดของวัน
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        start_of_day = int(date_obj.replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)
+        end_of_day = int(date_obj.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp() * 1000)
+        
+        print(f"Debug - Fetching data for {date} (start: {start_of_day}, end: {end_of_day})")
+        
+        # สร้าง payload สำหรับ API request
+        payload = {
+            "predicates": [
+                {
+                    "type": "date",
+                    "value": start_of_day,
+                    "operator": "ge",
+                    "field": "dateCreated"
+                },
+                {
+                    "type": "date",
+                    "value": end_of_day,
+                    "operator": "le",
+                    "field": "dateCreated"
+                },
+                {
+                    "type": "string",
+                    "value": "ACTIVE",
+                    "operator": "eq",
+                    "field": "status"
+                }
+            ],
+            "paging": {
+                "size": 1,  # เปลี่ยนเป็น 1 เพื่อดูจำนวนทั้งหมด
+                "page": 0
+            },
+            "sort": [
+                {
+                    "field": "dateCreated",
+                    "direction": "desc"
+                }
+            ]
+        }
+
+        # ส่ง request ไปยัง OneTrust API
+        async with httpx.AsyncClient() as session:
+            async with session.post(
+                'https://app.onetrust.com/api/consentmanager/v2/datasubjects/find',
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': ONETRUST_API_KEY
+                },
+                json=payload
+            ) as response:
+                print(f"Debug - API Response Status: {response.status}")
+                data = await response.json()
+                print(f"Debug - Raw API Response: {json.dumps(data, indent=2)}")
+
+                # เก็บข้อมูลจำนวนทั้งหมด
+                total_count = data.get('totalElements', 0)
+                
+                # ถ้ามีข้อมูล ดึง identifiers ทั้งหมด
+                identifiers = []
+                if total_count > 0:
+                    # อัพเดท payload เพื่อดึงข้อมูลทั้งหมด
+                    payload['paging']['size'] = total_count
+                    async with session.post(
+                        'https://app.onetrust.com/api/consentmanager/v2/datasubjects/find',
+                        headers={
+                            'Content-Type': 'application/json',
+                            'Authorization': ONETRUST_API_KEY
+                        },
+                        json=payload
+                    ) as full_response:
+                        full_data = await full_response.json()
+                        identifiers = [
+                            item.get('identifier')
+                            for item in full_data.get('content', [])
+                            if item.get('identifier')
+                        ]
+
+                # นับจำนวน consent ที่มี privacy policy และ marketing
+                privacy_policy_count = 0
+                marketing_count = 0
+                
+                if total_count > 0:
+                    # ดึงข้อมูล consent purposes สำหรับ identifiers ทั้งหมด
+                    purposes_payload = {
+                        "predicates": [
+                            {
+                                "type": "string",
+                                "value": identifiers,
+                                "operator": "in",
+                                "field": "identifier"
+                            }
+                        ],
+                        "paging": {
+                            "size": total_count,
+                            "page": 0
+                        }
+                    }
+                    
+                    async with session.post(
+                        'https://app.onetrust.com/api/consentmanager/v2/datasubjects/purpose/find',
+                        headers={
+                            'Content-Type': 'application/json',
+                            'Authorization': ONETRUST_API_KEY
+                        },
+                        json=purposes_payload
+                    ) as purposes_response:
+                        purposes_data = await purposes_response.json()
+                        print(f"Debug - Raw Purposes Response: {json.dumps(purposes_data, indent=2)}")
+                        
+                        # วนลูปนับจำนวน consent ตาม purpose
+                        for item in purposes_data.get('content', []):
+                            purposes = item.get('purposes', [])
+                            for purpose in purposes:
+                                if purpose.get('status') == 'ACTIVE':
+                                    purpose_id = purpose.get('id')
+                                    if purpose_id == PRIVACY_POLICY_PURPOSE_ID:
+                                        privacy_policy_count += 1
+                                    elif purpose_id == MARKETING_PURPOSE_ID:
+                                        marketing_count += 1
+
+                return {
+                    "total_count": total_count,
+                    "privacy_policy_count": privacy_policy_count,
+                    "marketing_count": marketing_count,
+                    "identifiers": identifiers
+                }
+
+    except Exception as e:
+        print(f"Error fetching OneTrust data: {str(e)}")
+        raise
+
+async def fetch_consent_data(date: str):
+    """ดึงข้อมูล consent จาก OneTrust API และบันทึกข้อมูล"""
+    onetrust_data = await fetch_onetrust_data(date)
+    total_count = onetrust_data["total_count"]
+    
+    # เตรียมค่าเริ่มต้นสำหรับ response
+    response_data = {
+        "total_consents": total_count,
+        "privacy_policy_consents": onetrust_data["privacy_policy_count"],
+        "marketing_consents": onetrust_data["marketing_count"],
+        "marketing_consent_percentage": (onetrust_data["marketing_count"] / total_count * 100) if total_count > 0 else 0,
+        "f1_channel_consents": 0,
+        "kp_channel_consents": 0,
+        "gwl_channel_consents": 0,
+        "dropoff_count": total_count,  # ค่าเริ่มต้น = จำนวน consent ทั้งหมด
+        "dropoff_percentage": 100.0,  # ค่าเริ่มต้น = 100%
+        "date": date
+    }
+    
+    # ลองโหลดข้อมูล CSV
+    try:
+        df = load_user_data(datetime.now().strftime("%Y-%m-%d"))
+        if df is None:
+            print("Debug - ไม่พบไฟล์ CSV จะลองดาวน์โหลดใหม่")
+            await ensure_user_data_exists(datetime.now().strftime("%Y-%m-%d"))
+            df = load_user_data(datetime.now().strftime("%Y-%m-%d"))
+        
+        if df is not None:
+            print(f"Debug - พบข้อมูล CSV columns: {df.columns.tolist()}")
+            
+            # นับจำนวน profile ของ user ที่ให้ consent
+            f1_count, kp_count, gwl_count, matched_users = count_channel_consents(onetrust_data["identifiers"], df)
+            
+            # อัพเดต response data
+            users_with_profile = f1_count + kp_count  # เปลี่ยนวิธีคำนวณ dropoff ให้ใช้แค่ F1 + KP
+            
+            response_data.update({
+                "f1_channel_consents": f1_count,
+                "kp_channel_consents": kp_count,
+                "gwl_channel_consents": gwl_count,
+                "dropoff_count": total_count - users_with_profile,
+                "dropoff_percentage": ((total_count - users_with_profile) / total_count * 100) if total_count > 0 else 0
+            })
+            
+    except Exception as e:
+        print(f"Debug - เกิดข้อผิดพลาดในการโหลด CSV: {str(e)}")
+        print("Debug - จะใช้ค่าเริ่มต้นแทน")
+    
+    return response_data
+
+@app.get("/api/consent-data/{date}")
+async def get_consent_data(date: str):
+    try:
+        # ถ้าเป็นวันปัจจุบัน ให้ยิง API โดยตรง
+        today = datetime.now().strftime("%Y-%m-%d")
+        if date == today:
+            consent_data = await fetch_consent_data(date)
+            # บันทึกข้อมูลลง database
+            database.save_consent_data(consent_data, date)
+            return ConsentStats(**consent_data)
+        
+        # ถ้าไม่ใช่วันปัจจุบัน ให้เช็คใน database ก่อน
         stored_data = database.get_consent_data(date)
         if stored_data and len(stored_data) > 0:
             print(f"Found data in database for {date}")
@@ -351,56 +543,9 @@ async def get_consent_data_by_date(date: str):
             
         print(f"No data in database for {date}, fetching from API")
         # ถ้าไม่มีข้อมูลใน database ให้ดึงจาก API
-        onetrust_data = await fetch_onetrust_data(date)
-        total_count = onetrust_data["total_count"]
-        
-        # เตรียมค่าเริ่มต้นสำหรับ response
-        response_data = {
-            "total_consents": total_count,
-            "privacy_policy_consents": onetrust_data["privacy_policy_count"],
-            "marketing_consents": onetrust_data["marketing_count"],
-            "marketing_consent_percentage": (onetrust_data["marketing_count"] / total_count * 100) if total_count > 0 else 0,
-            "f1_channel_consents": 0,
-            "kp_channel_consents": 0,
-            "gwl_channel_consents": 0,
-            "dropoff_count": total_count,  # ค่าเริ่มต้น = จำนวน consent ทั้งหมด
-            "dropoff_percentage": 100.0,  # ค่าเริ่มต้น = 100%
-            "date": date
-        }
-        
-        # ลองโหลดข้อมูล CSV
-        try:
-            df = load_user_data(datetime.now().strftime("%Y-%m-%d"))
-            if df is None:
-                print("Debug - ไม่พบไฟล์ CSV จะลองดาวน์โหลดใหม่")
-                await ensure_user_data_exists(datetime.now().strftime("%Y-%m-%d"))
-                df = load_user_data(datetime.now().strftime("%Y-%m-%d"))
-            
-            if df is not None:
-                print(f"Debug - พบข้อมูล CSV columns: {df.columns.tolist()}")
-                
-                # นับจำนวน profile ของ user ที่ให้ consent
-                f1_count, kp_count, gwl_count, matched_users = count_channel_consents(onetrust_data["identifiers"], df)
-                
-                # อัพเดต response data
-                users_with_profile = f1_count + kp_count  # เปลี่ยนวิธีคำนวณ dropoff ให้ใช้แค่ F1 + KP
-                
-                response_data.update({
-                    "f1_channel_consents": f1_count,
-                    "kp_channel_consents": kp_count,
-                    "gwl_channel_consents": gwl_count,
-                    "dropoff_count": total_count - users_with_profile,
-                    "dropoff_percentage": ((total_count - users_with_profile) / total_count * 100) if total_count > 0 else 0
-                })
-                
-        except Exception as e:
-            print(f"Debug - เกิดข้อผิดพลาดในการโหลด CSV: {str(e)}")
-            print("Debug - จะใช้ค่าเริ่มต้นแทน")
-        
-        # เก็บข้อมูลลง database
-        database.save_consent_data(response_data, date)
-        
-        return ConsentStats(**response_data)
+        consent_data = await fetch_consent_data(date)
+        database.save_consent_data(consent_data, date)
+        return ConsentStats(**consent_data)
         
     except Exception as e:
         print(f"Debug - เกิดข้อผิดพลาด: {str(e)}")
