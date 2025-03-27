@@ -10,25 +10,33 @@ def init_db():
     conn = sqlite3.connect('consent_data.db')
     c = conn.cursor()
     
-    # Drop existing table if exists
-    c.execute('DROP TABLE IF EXISTS consent_data')
+    # Check if table exists
+    c.execute("""
+        SELECT count(name) FROM sqlite_master 
+        WHERE type='table' AND name='consent_data'
+    """)
     
-    # Create table
-    c.execute('''
-        CREATE TABLE consent_data (
-            date TEXT PRIMARY KEY,
-            total_consents INTEGER,
-            privacy_policy_consents INTEGER,
-            marketing_consents INTEGER,
-            marketing_consent_percentage REAL,
-            f1_channel_consents INTEGER,
-            kp_channel_consents INTEGER,
-            gwl_channel_consents INTEGER,
-            dropoff_count INTEGER,
-            dropoff_percentage REAL,
-            created_at TEXT
-        )
-    ''')
+    # Create table only if it doesn't exist
+    if c.fetchone()[0] == 0:
+        # Create table
+        c.execute('''
+            CREATE TABLE consent_data (
+                date TEXT PRIMARY KEY,
+                total_consents INTEGER,
+                privacy_policy_consents INTEGER,
+                marketing_consents INTEGER,
+                marketing_consent_percentage REAL,
+                f1_channel_consents INTEGER,
+                kp_channel_consents INTEGER,
+                gwl_channel_consents INTEGER,
+                dropoff_count INTEGER,
+                dropoff_percentage REAL,
+                created_at TEXT
+            )
+        ''')
+        logger.info("Database table created")
+    else:
+        logger.info("Database table already exists")
     
     conn.commit()
     conn.close()

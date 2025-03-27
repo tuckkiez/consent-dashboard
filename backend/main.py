@@ -492,6 +492,52 @@ async def manual_fetch():
         logger.error(f"Error in manual fetch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/dashboard-summary")
+async def get_dashboard_summary():
+    """Get summary data for dashboard by summing all data in database"""
+    try:
+        # ดึงข้อมูลทั้งหมดจาก database
+        all_data = await get_all_consent_data()
+        
+        # เตรียมตัวแปรสำหรับรวมค่า
+        total_consents = 0
+        privacy_policy_consents = 0
+        marketing_consents = 0
+        f1_channel_consents = 0
+        kp_channel_consents = 0
+        gwl_channel_consents = 0
+        dropoff_count = 0
+        
+        # รวมค่าจากทุกวัน
+        for data in all_data:
+            total_consents += data.get('total_consents', 0)
+            privacy_policy_consents += data.get('privacy_policy_consents', 0)
+            marketing_consents += data.get('marketing_consents', 0)
+            f1_channel_consents += data.get('f1_channel_consents', 0)
+            kp_channel_consents += data.get('kp_channel_consents', 0)
+            gwl_channel_consents += data.get('gwl_channel_consents', 0)
+            dropoff_count += data.get('dropoff_count', 0)
+        
+        # คำนวณ percentage
+        marketing_consent_percentage = (marketing_consents / total_consents * 100) if total_consents > 0 else 0
+        dropoff_percentage = (dropoff_count / total_consents * 100) if total_consents > 0 else 0
+        
+        return {
+            "total_consents": total_consents,
+            "privacy_policy_consents": privacy_policy_consents,
+            "marketing_consents": marketing_consents,
+            "marketing_consent_percentage": marketing_consent_percentage,
+            "f1_channel_consents": f1_channel_consents,
+            "kp_channel_consents": kp_channel_consents,
+            "gwl_channel_consents": gwl_channel_consents,
+            "dropoff_count": dropoff_count,
+            "dropoff_percentage": dropoff_percentage
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting dashboard summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and start scheduler"""
