@@ -118,12 +118,14 @@ function TableView() {
         }
         
         // วันก่อนหน้า แสดงปุ่มเฉพาะเมื่อยังไม่มีข้อมูล
-        if (date === yesterdayStr && !data.find(row => row.date === date)?.total_consents) {
+        const yesterdayData = data.find(row => row.date === date);
+        if (date === yesterdayStr && (!yesterdayData || !yesterdayData.total_consents)) {
             return 'yesterday';
         }
 
         // วันอื่นๆ แสดงปุ่มเมื่อไม่มีข้อมูล
-        if (!data.find(row => row.date === date)?.total_consents) {
+        const rowData = data.find(row => row.date === date);
+        if (!rowData || !rowData.total_consents) {
             return 'other';
         }
 
@@ -262,3 +264,5 @@ function TableView() {
 function TableContainer() {
     return <TableView />;
 }
+
+window.TableContainer = TableContainer;

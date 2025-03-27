@@ -6,46 +6,17 @@
     <title>Consent Dashboard</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-gray-50">
     <div id="root"></div>
-    <script type="text/babel">
-      // Global utility functions
-      function getTodayDate() {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      }
-
-      function formatDate(date) {
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      }
-    </script>
-    <script type="text/babel" src="dashboard.js"></script>
     <script type="text/babel" src="table.js"></script>
+    <script type="text/babel" src="dashboard.js"></script>
     <script type="text/babel">
       const { useState } = React;
-
-      function StatCard({ title, value, description, color }) {
-        return (
-          <div className={`bg-white rounded-lg shadow p-6 ${color}`}>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
-            <p className="text-3xl font-bold text-blue-600">{value}</p>
-            {description && (
-              <p className="text-sm text-gray-600 mt-2">{description}</p>
-            )}
-          </div>
-        );
-      }
 
       function App() {
         const [view, setView] = useState('dashboard');
