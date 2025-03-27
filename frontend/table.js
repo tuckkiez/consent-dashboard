@@ -30,6 +30,11 @@ function TableView() {
     }
   };
 
+  const formatDate = (dateStr) => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   if (loading) return <div className="text-center p-4">Loading...</div>;
   if (error) return <div className="text-center p-4 text-red-500">Error: {error}</div>;
   if (!data || data.length === 0) return <div className="p-4">-</div>;
@@ -56,7 +61,7 @@ function TableView() {
           <tbody>
             {data.map((row, index) => (
               <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                <td className="px-4 py-2 border">{row.date}</td>
+                <td className="px-4 py-2 border">{formatDate(row.date)}</td>
                 <td className="px-4 py-2 border text-right">{row.total_consents || '-'}</td>
                 <td className="px-4 py-2 border text-right">{row.privacy_policy_consents || '-'}</td>
                 <td className="px-4 py-2 border text-right">{row.marketing_consents || '-'}</td>
