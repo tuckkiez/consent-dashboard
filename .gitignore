@@ -19,6 +19,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pyc
 
 # Virtual Environment
 venv/
@@ -42,3 +43,4 @@ Thumbs.db
 # Project specific
 data/
 .env
+consent_data.db

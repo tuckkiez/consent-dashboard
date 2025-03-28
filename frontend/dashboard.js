@@ -225,7 +225,7 @@ function DashboardView({ data, chartData }) {
                             </div>
                         </div>
                         <div className="bg-white rounded-xl shadow-lg p-6">
-                            <h3 className="text-lg font-semibold mb-4 text-gray-700">Total Consents Per Day</h3>
+                            <h3 className="text-lg font-semibold mb-4 text-gray-700">Total Consents mPer Day</h3>
                             <div className="h-64">
                                 <canvas id="totalConsents"></canvas>
                             </div>
@@ -247,7 +247,7 @@ function DashboardContainer() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get('http://localhost:8001/api/dashboard-summary');
+                const response = await axios.get(`${window.API_URL}/api/dashboard-summary`);
                 setData(response.data);
                 setError(null);
             } catch (error) {
@@ -264,7 +264,7 @@ function DashboardContainer() {
     useEffect(() => {
         const fetchChartData = async () => {
             try {
-                const response = await axios.get('http://localhost:8001/api/daily-stats');
+                const response = await axios.get(`${window.API_URL}/api/daily-stats`);
                 setChartData(response.data);
             } catch (error) {
                 console.error('Error fetching chart data:', error);

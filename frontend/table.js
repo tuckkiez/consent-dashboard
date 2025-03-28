@@ -57,6 +57,39 @@ function TableView() {
     };
 
     useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.get(`${window.API_URL}/api/all-consent-data`);
+                // สร้าง map ของข้อมูลที่มีอยู่
+                const dataMap = new Map(response.data.map(item => [item.date, item]));
+                
+                // สร้างข้อมูลสำหรับทุกวัน เรียงจากใหม่ไปเก่า
+                const allDates = generateDateRange();
+                const fullData = allDates.map(date => {
+                    return dataMap.get(date) || {
+                        date,
+                        total_consents: null,
+                        privacy_policy_consents: null,
+                        marketing_consents: null,
+                        marketing_consent_percentage: null,
+                        f1_channel_consents: null,
+                        kp_channel_consents: null,
+                        gwl_channel_consents: null,
+                        dropoff_count: null,
+                        dropoff_percentage: null,
+                        new_users: null
+                    };
+                });
+                
+                setData(fullData);
+            } catch (e) {
+                setError(e.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchData();
     }, []);
 
@@ -64,45 +97,10 @@ function TableView() {
         setCurrentPage(1); // รีเซ็ตหน้าเมื่อเปลี่ยนจำนวนวันที่แสดง
     }, [displayCount]);
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const response = await axios.get('http://localhost:8001/api/all-consent-data');
-            
-            // สร้าง map ของข้อมูลที่มีอยู่
-            const dataMap = new Map(response.data.map(item => [item.date, item]));
-            
-            // สร้างข้อมูลสำหรับทุกวัน เรียงจากใหม่ไปเก่า
-            const allDates = generateDateRange();
-            const fullData = allDates.map(date => {
-                return dataMap.get(date) || {
-                    date,
-                    total_consents: null,
-                    privacy_policy_consents: null,
-                    marketing_consents: null,
-                    marketing_consent_percentage: null,
-                    f1_channel_consents: null,
-                    kp_channel_consents: null,
-                    gwl_channel_consents: null,
-                    dropoff_count: null,
-                    dropoff_percentage: null,
-                    new_users: null
-                };
-            });
-            
-            setData(fullData);
-        } catch (e) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // ฟังก์ชันสำหรับ fetch ข้อมูลของวันที่เดียว
     const fetchSingleDate = async (date) => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8001/api/manual-fetch/${date}`, {
+            const response = await fetch(`${window.API_URL}/api/manual-fetch/${date}`, {
                 method: 'POST'
             });
             
@@ -111,7 +109,7 @@ function TableView() {
             }
 
             // หลังจาก fetch สำเร็จ ดึงข้อมูลใหม่มาแสดง
-            const updatedResponse = await fetch(`http://localhost:8001/api/consent-data/${date}`);
+            const updatedResponse = await fetch(`${window.API_URL}/api/consent-data/${date}`);
             if (!updatedResponse.ok) {
                 throw new Error('Failed to get updated data');
             }
