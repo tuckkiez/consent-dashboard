@@ -1,3 +1,4 @@
-window.API_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8001'
-    : 'https://your-backend-url.onrender.com'; // จะได้ URL นี้หลังจาก deploy บน render.com
+// กำหนด API URL ตามสภาพแวดล้อม
+window.API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8001' // Local development
+    : 'https://consent-dashboard.onrender.com'; // Production URL (Render.com)
