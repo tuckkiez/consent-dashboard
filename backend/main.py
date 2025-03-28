@@ -624,6 +624,8 @@ async def get_daily_stats():
 async def startup_event():
     """Initialize database and start scheduler"""
     init_db()
+    # Import here to avoid circular import
+    from backend.scheduled_tasks import start_scheduler
     start_scheduler()
 
 if __name__ == "__main__":
