@@ -6,37 +6,31 @@ import logging
 logger = logging.getLogger(__name__)
 
 def init_db():
-    """Initialize the database with required tables"""
-    conn = sqlite3.connect('consent_data.db')
-    c = conn.cursor()
-    
-    # Check if table exists
-    c.execute("""
-        SELECT count(name) FROM sqlite_master 
-        WHERE type='table' AND name='consent_data'
-    """)
-    
-    # Create table only if it doesn't exist
-    if c.fetchone()[0] == 0:
-        # Create table
-        c.execute('''
-            CREATE TABLE consent_data (
-                date TEXT PRIMARY KEY,
-                total_consents INTEGER,
-                privacy_policy_consents INTEGER,
-                marketing_consents INTEGER,
-                marketing_consent_percentage REAL,
-                f1_channel_consents INTEGER,
-                kp_channel_consents INTEGER,
-                gwl_channel_consents INTEGER,
-                dropoff_count INTEGER,
-                dropoff_percentage REAL,
-                created_at TEXT
-            )
-        ''')
-        logger.info("Database table created")
-    else:
-        logger.info("Database table already exists")
+    """Initialize database"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Drop existing table
+    cursor.execute('DROP TABLE IF EXISTS consent_data')
+
+    # Create table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS consent_data (
+            date TEXT PRIMARY KEY,
+            total_consents INTEGER,
+            privacy_policy_consents INTEGER,
+            marketing_consents INTEGER,
+            marketing_consent_percentage REAL,
+            f1_channel_consents INTEGER,
+            kp_channel_consents INTEGER,
+            gwl_channel_consents INTEGER,
+            dropoff_count INTEGER,
+            dropoff_percentage REAL,
+            new_users INTEGER DEFAULT 0,
+            created_at TEXT
+        )
+    ''')
+    logger.info("Database table created")
     
     conn.commit()
     conn.close()
@@ -61,6 +55,7 @@ def save_consent_data(data, date):
             int(data.get('gwl_channel_consents', 0)),
             int(data.get('dropoff_count', 0)),
             float(data.get('dropoff_percentage', 0)),
+            int(data.get('new_users', 0)),
             datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         )
         
@@ -77,8 +72,9 @@ def save_consent_data(data, date):
                 gwl_channel_consents,
                 dropoff_count,
                 dropoff_percentage,
+                new_users,
                 created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, values)
         
         conn.commit()
@@ -109,6 +105,7 @@ def get_consent_data(start_date: str, end_date: str = None):
                     gwl_channel_consents,
                     dropoff_count,
                     dropoff_percentage,
+                    new_users,
                     created_at
                 FROM consent_data 
                 WHERE date BETWEEN ? AND ?
@@ -127,6 +124,7 @@ def get_consent_data(start_date: str, end_date: str = None):
                     gwl_channel_consents,
                     dropoff_count,
                     dropoff_percentage,
+                    new_users,
                     created_at
                 FROM consent_data 
                 WHERE date = ?
@@ -145,6 +143,7 @@ def get_consent_data(start_date: str, end_date: str = None):
             'gwl_channel_consents',
             'dropoff_count',
             'dropoff_percentage',
+            'new_users',
             'created_at'
         ]
         
@@ -217,6 +216,7 @@ def get_all_consent_data():
                 gwl_channel_consents,
                 dropoff_count,
                 dropoff_percentage,
+                new_users,
                 created_at
             FROM consent_data
             ORDER BY date DESC
@@ -236,7 +236,8 @@ def get_all_consent_data():
                 'kp_channel_consents': row[6],
                 'gwl_channel_consents': row[7],
                 'dropoff_count': row[8],
-                'dropoff_percentage': float(row[9]) if row[9] else 0
+                'dropoff_percentage': float(row[9]) if row[9] else 0,
+                'new_users': row[10]
             })
         return result
     except Exception as e:
@@ -255,9 +256,9 @@ def add_sample_data():
         
         # เพิ่มข้อมูลตัวอย่าง
         sample_data = [
-            ('2025-03-25', 85, 85, 65, 76.47, 10, 5, 2, 5, 5.88),
-            ('2025-03-26', 90, 90, 70, 77.78, 12, 6, 3, 8, 8.89),
-            ('2025-03-27', 93, 93, 72, 77.42, 15, 7, 4, 10, 10.75)
+            ('2025-03-25', 85, 85, 65, 76.47, 10, 5, 2, 5, 5.88, 10),
+            ('2025-03-26', 90, 90, 70, 77.78, 12, 6, 3, 8, 8.89, 15),
+            ('2025-03-27', 93, 93, 72, 77.42, 15, 7, 4, 10, 10.75, 20)
         ]
         
         cursor.executemany("""
@@ -271,8 +272,9 @@ def add_sample_data():
                 kp_channel_consents,
                 gwl_channel_consents,
                 dropoff_count,
-                dropoff_percentage
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                dropoff_percentage,
+                new_users
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, sample_data)
         
         conn.commit()

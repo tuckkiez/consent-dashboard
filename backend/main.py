@@ -50,6 +50,7 @@ class ConsentStats(BaseModel):
     dropoff_count: int
     dropoff_percentage: float
     marketing_consent_percentage: float
+    new_users: int
     date: str
 
 async def get_auth0_token():
@@ -366,20 +367,37 @@ async def fetch_onetrust_data(date: str):
 
 async def fetch_consent_data(date: str):
     """ดึงข้อมูล consent จาก OneTrust API และบันทึกข้อมูล"""
-    onetrust_data = await fetch_onetrust_data(date)
-    total_count = onetrust_data["total_count"]
+    print(f"\nDebug - เริ่มดึงข้อมูลวันที่ {date}")
+    
+    # ดึงข้อมูลจาก OneTrust
+    consent_data = await fetch_onetrust_data(date)
+    print(f"Debug - ได้ข้อมูลจาก OneTrust API:")
+    print(f"Debug - total_count: {consent_data['total_count']}")
+    print(f"Debug - privacy_policy_count: {consent_data['privacy_policy_count']}")
+    print(f"Debug - marketing_count: {consent_data['marketing_count']}")
+    print(f"Debug - จำนวน identifiers: {len(consent_data['identifiers'])}")
+    
+    # นับจำนวน new users (ที่ไม่มี prefix auth0|f1 หรือ auth0|kp)
+    new_users = 0
+    for identifier in consent_data['identifiers']:
+        if not (identifier.startswith('auth0|f1') or identifier.startswith('auth0|kp')):
+            new_users += 1
+            print(f"Debug - Found new user: {identifier}")
+    
+    print(f"Debug - Total new users: {new_users}")
     
     # เตรียมค่าเริ่มต้นสำหรับ response
     response_data = {
-        "total_consents": total_count,
-        "privacy_policy_consents": onetrust_data["privacy_policy_count"],
-        "marketing_consents": onetrust_data["marketing_count"],
-        "marketing_consent_percentage": (onetrust_data["marketing_count"] / total_count * 100) if total_count > 0 else 0,
+        "total_consents": consent_data["total_count"],
+        "privacy_policy_consents": consent_data["privacy_policy_count"],
+        "marketing_consents": consent_data["marketing_count"],
+        "marketing_consent_percentage": (consent_data["marketing_count"] / consent_data["total_count"] * 100) if consent_data["total_count"] > 0 else 0,
         "f1_channel_consents": 0,
         "kp_channel_consents": 0,
         "gwl_channel_consents": 0,
-        "dropoff_count": total_count,  # ค่าเริ่มต้น = จำนวน consent ทั้งหมด
+        "dropoff_count": consent_data["total_count"],  # ค่าเริ่มต้น = จำนวน consent ทั้งหมด
         "dropoff_percentage": 100.0,  # ค่าเริ่มต้น = 100%
+        "new_users": new_users,  # เพิ่ม new_users
         "date": date
     }
     
@@ -395,7 +413,7 @@ async def fetch_consent_data(date: str):
             print(f"Debug - พบข้อมูล CSV columns: {df.columns.tolist()}")
             
             # นับจำนวน profile ของ user ที่ให้ consent
-            f1_count, kp_count, gwl_count, matched_users = count_channel_consents(onetrust_data["identifiers"], df)
+            f1_count, kp_count, gwl_count, matched_users = count_channel_consents(consent_data["identifiers"], df)
             
             # อัพเดต response data
             users_with_profile = f1_count + kp_count  # เปลี่ยนวิธีคำนวณ dropoff ให้ใช้แค่ F1 + KP
@@ -404,8 +422,8 @@ async def fetch_consent_data(date: str):
                 "f1_channel_consents": f1_count,
                 "kp_channel_consents": kp_count,
                 "gwl_channel_consents": gwl_count,
-                "dropoff_count": total_count - users_with_profile,
-                "dropoff_percentage": ((total_count - users_with_profile) / total_count * 100) if total_count > 0 else 0
+                "dropoff_count": consent_data["total_count"] - users_with_profile,
+                "dropoff_percentage": ((consent_data["total_count"] - users_with_profile) / consent_data["total_count"] * 100) if consent_data["total_count"] > 0 else 0
             })
             
     except Exception as e:

@@ -62,7 +62,8 @@ function TableView() {
                     kp_channel_consents: null,
                     gwl_channel_consents: null,
                     dropoff_count: null,
-                    dropoff_percentage: null
+                    dropoff_percentage: null,
+                    new_users: null
                 };
             });
             
@@ -206,6 +207,7 @@ function TableView() {
                             <th className="px-4 py-2 border">GWL Channel</th>
                             <th className="px-4 py-2 border">Dropoff Count</th>
                             <th className="px-4 py-2 border">Dropoff %</th>
+                            <th className="px-4 py-2 border">New Users</th>
                             <th className="px-4 py-2 border">Action</th>
                         </tr>
                     </thead>
@@ -227,6 +229,7 @@ function TableView() {
                                     <td className="px-4 py-2 border text-right">
                                         {row.dropoff_percentage ? `${row.dropoff_percentage.toFixed(2)}%` : '-'}
                                     </td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.new_users)}</td>
                                     <td className="px-4 py-2 border text-center">
                                         {renderFetchButton(row.date)}
                                     </td>
