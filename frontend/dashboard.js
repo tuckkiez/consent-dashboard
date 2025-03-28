@@ -92,7 +92,40 @@ function DashboardView({ data, chartData }) {
                 }
             }
         });
-    }, [chartData]);
+
+        // Create Channel Distribution Pie Chart
+        const channelCtx = document.getElementById('channelDistribution').getContext('2d');
+        new Chart(channelCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['F1', 'KP', 'GWL'],
+                datasets: [{
+                    data: [
+                        data.f1_channel_consents,
+                        data.kp_channel_consents,
+                        data.gwl_channel_consents
+                    ],
+                    backgroundColor: [
+                        '#ec4899', // pink-500
+                        '#3b82f6', // blue-500
+                        '#eab308'  // yellow-500
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }, [chartData, data]);
 
     const formatNumber = (num) => {
         return new Intl.NumberFormat().format(num);
@@ -141,7 +174,7 @@ function DashboardView({ data, chartData }) {
                         color="text-purple-600"
                     />
                     <StatCard 
-                        title="Marketin Consent"
+                        title="Marketing Consent"
                         value={formatNumber(data.marketing_consents)}
                         color="text-indigo-600"
                     />
@@ -161,7 +194,10 @@ function DashboardView({ data, chartData }) {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         <h3 className="text-lg font-semibold mb-4 text-gray-700">Channel Distribution</h3>
-                        <div className="space-y-4">
+                        <div className="h-64">
+                            <canvas id="channelDistribution"></canvas>
+                        </div>
+                        <div className="mt-4 space-y-4">
                             <div className="flex items-center">
                                 <div className="w-2 h-2 rounded-full bg-pink-500 mr-2"></div>
                                 <span className="text-gray-600 flex-1">F1</span>
