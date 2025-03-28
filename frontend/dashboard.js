@@ -73,6 +73,10 @@ function DashboardView({ data }) {
                 {data.marketing_consent_percentage ? data.marketing_consent_percentage.toFixed(2) : '0.00'}%
               </span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">New Users:</span>
+              <span className="text-xl font-semibold text-purple-600">{formatNumber(data.new_users)}</span>
+            </div>
           </div>
         </div>
 
