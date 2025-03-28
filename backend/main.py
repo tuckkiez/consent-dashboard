@@ -22,10 +22,10 @@ load_dotenv()
 
 app = FastAPI()
 
-# Enable CORS
+# CORS middleware to allow cross-origin requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # ในการ deploy จริงควรระบุ domain ที่อนุญาตเท่านั้น
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
