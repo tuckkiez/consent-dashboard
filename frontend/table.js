@@ -191,17 +191,22 @@ function TableView() {
                             Showing {(currentPage - 1) * displayCount + 1} to {Math.min(currentPage * displayCount, data.length)} of {data.length} entries
                         </div>
                         <div className="flex items-center space-x-6">
-                            <div className="w-40">
+                            <div className="relative w-40">
                                 <select
                                     value={displayCount}
                                     onChange={(e) => setDisplayCount(Number(e.target.value))}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                    className="w-full appearance-none px-4 py-2 pr-8 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer"
                                 >
                                     <option value="10">10 rows</option>
                                     <option value="20">20 rows</option>
                                     <option value="50">50 rows</option>
                                     <option value="100">100 rows</option>
                                 </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <svg className="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
                             </div>
                             <div className="flex space-x-2">
                                 <button
