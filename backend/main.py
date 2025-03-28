@@ -596,6 +596,29 @@ async def get_dashboard_summary():
         print(f"Error getting dashboard summary: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/daily-stats")
+async def get_daily_stats():
+    """Get daily statistics for charts"""
+    try:
+        # Get all data from database
+        all_data = await get_all_consent_data()
+        
+        # Convert data types and format for charts
+        formatted_data = []
+        for data in all_data:
+            formatted_data.append({
+                "date": data["date"],
+                "total_consents": int(data.get("total_consents", 0) or 0),
+                "marketing_consent_percentage": float(data.get("marketing_consent_percentage", 0) or 0),
+                "dropoff_percentage": float(data.get("dropoff_percentage", 0) or 0)
+            })
+            
+        return formatted_data
+            
+    except Exception as e:
+        print(f"Error getting daily stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and start scheduler"""
