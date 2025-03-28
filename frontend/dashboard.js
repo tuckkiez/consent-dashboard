@@ -1,45 +1,57 @@
 const { useState, useEffect } = React;
 
-function DashboardView({ data }) {
+function DashboardView({ data, chartData }) {
   if (!data) return null;
 
   useEffect(() => {
-    // Line Chart - Consent Trends
-    const consentCtx = document.getElementById('consentTrends');
-    if (consentCtx) {
-      new Chart(consentCtx, {
-        type: 'line',
-        data: {
-          labels: ['Total', 'Privacy', 'Marketing'],
-          datasets: [{
-            label: 'Consents',
-            data: [data.total_consents, data.privacy_policy_consents, data.marketing_consents],
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-          }]
-        }
-      });
-    }
+    if (!chartData || chartData.length === 0) return;
 
-    // Pie Chart - Channel Distribution
-    const channelCtx = document.getElementById('channelDistribution');
-    if (channelCtx) {
-      new Chart(channelCtx, {
-        type: 'pie',
-        data: {
-          labels: ['F1', 'KP', 'GWL'],
-          datasets: [{
-            data: [data.f1_channel_consents, data.kp_channel_consents, data.gwl_channel_consents],
-            backgroundColor: [
-              'rgb(255, 99, 132)',
-              'rgb(54, 162, 235)',
-              'rgb(255, 205, 86)'
-            ]
-          }]
-        }
-      });
-    }
-  }, [data]);
+    // สร้างกราฟ Consent Trends
+    const trendCtx = document.getElementById('consentTrends').getContext('2d');
+    new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: chartData.map(d => d.date),
+        datasets: [
+          {
+            label: 'Marketing Consent %',
+            data: chartData.map(d => d.marketing_consent_percentage),
+            borderColor: '#8884d8',
+            tension: 0.1
+          },
+          {
+            label: 'Dropoff %',
+            data: chartData.map(d => d.dropoff_percentage),
+            borderColor: '#82ca9d',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+
+    // สร้างกราฟ Total Consents
+    const totalCtx = document.getElementById('totalConsents').getContext('2d');
+    new Chart(totalCtx, {
+      type: 'line',
+      data: {
+        labels: chartData.map(d => d.date),
+        datasets: [{
+          label: 'Total Consents',
+          data: chartData.map(d => d.total_consents),
+          borderColor: '#ff7300',
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  }, [chartData]);
 
   // Format numbers with commas
   const formatNumber = (num) => {
@@ -47,9 +59,8 @@ function DashboardView({ data }) {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Consent Dashboard</h2>
-      
+    <div className="p-4">
+      <h2 className="text-xl mb-6 font-bold text-gray-800" >Consent Dashboard</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {/* Consent Overview Card */}
         <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -120,11 +131,22 @@ function DashboardView({ data }) {
         </div>
       </div>
 
-      {/* Consent Trends Chart */}
-      <div className="bg-white p-6 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-4 text-gray-700">Consent Trends</h3>
-        <div className="h-64">
-          <canvas id="consentTrends"></canvas>
+      {/* กราฟ Consent Trends และ Total Consents */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        {/* กราฟ Consent Trends */}
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Consent Trends</h3>
+          <div style={{ height: '300px' }}>
+            <canvas id="consentTrends"></canvas>
+          </div>
+        </div>
+
+        {/* กราฟ Total Consents */}
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Total Consents by Day</h3>
+          <div style={{ height: '300px' }}>
+            <canvas id="totalConsents"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -133,9 +155,11 @@ function DashboardView({ data }) {
 
 function DashboardContainer() {
   const [data, setData] = useState(null);
+  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch dashboard summary
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -154,11 +178,25 @@ function DashboardContainer() {
     fetchData();
   }, []);
 
+  // Fetch chart data
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const response = await axios.get('http://localhost:8001/api/daily-stats');
+        setChartData(response.data);
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+      }
+    };
+
+    fetchChartData();
+  }, []);
+
   if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
   if (!data) return <div className="p-4">No data available</div>;
 
-  return <DashboardView data={data} />;
+  return <DashboardView data={data} chartData={chartData} />;
 }
 
 window.DashboardContainer = DashboardContainer;
