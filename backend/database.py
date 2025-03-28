@@ -10,10 +10,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Drop existing table
-    cursor.execute('DROP TABLE IF EXISTS consent_data')
-
-    # Create table
+    # Create table if not exists (ไม่ drop table แล้ว)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS consent_data (
             date TEXT PRIMARY KEY,
@@ -30,7 +27,7 @@ def init_db():
             created_at TEXT
         )
     ''')
-    logger.info("Database table created")
+    logger.info("Database initialized")
     
     conn.commit()
     conn.close()
