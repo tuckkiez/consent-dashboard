@@ -562,16 +562,18 @@ async def get_dashboard_summary():
         kp_channel_consents = 0
         gwl_channel_consents = 0
         dropoff_count = 0
+        new_users = 0
         
         # รวมค่าจากทุกวัน
         for data in all_data:
-            total_consents += data.get('total_consents', 0)
-            privacy_policy_consents += data.get('privacy_policy_consents', 0)
-            marketing_consents += data.get('marketing_consents', 0)
-            f1_channel_consents += data.get('f1_channel_consents', 0)
-            kp_channel_consents += data.get('kp_channel_consents', 0)
-            gwl_channel_consents += data.get('gwl_channel_consents', 0)
-            dropoff_count += data.get('dropoff_count', 0)
+            total_consents += data.get('total_consents', 0) or 0
+            privacy_policy_consents += data.get('privacy_policy_consents', 0) or 0
+            marketing_consents += data.get('marketing_consents', 0) or 0
+            f1_channel_consents += data.get('f1_channel_consents', 0) or 0
+            kp_channel_consents += data.get('kp_channel_consents', 0) or 0
+            gwl_channel_consents += data.get('gwl_channel_consents', 0) or 0
+            dropoff_count += data.get('dropoff_count', 0) or 0
+            new_users += data.get('new_users', 0) or 0
         
         # คำนวณ percentage
         marketing_consent_percentage = (marketing_consents / total_consents * 100) if total_consents > 0 else 0
@@ -586,11 +588,12 @@ async def get_dashboard_summary():
             "kp_channel_consents": kp_channel_consents,
             "gwl_channel_consents": gwl_channel_consents,
             "dropoff_count": dropoff_count,
-            "dropoff_percentage": dropoff_percentage
+            "dropoff_percentage": dropoff_percentage,
+            "new_users": new_users
         }
         
     except Exception as e:
-        logger.error(f"Error getting dashboard summary: {str(e)}")
+        print(f"Error getting dashboard summary: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.on_event("startup")
