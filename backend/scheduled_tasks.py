@@ -10,7 +10,7 @@ async def fetch_daily_data():
     """Daily task to fetch user data from Auth0"""
     try:
         # Import here to avoid circular import
-        from main import ensure_user_data_exists
+        from backend.main import ensure_user_data_exists
         
         today = datetime.now().strftime('%Y-%m-%d')
         logger.info(f"Starting daily data fetch for {today}")

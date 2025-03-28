@@ -12,7 +12,6 @@ import gzip
 import shutil
 import asyncio
 from dotenv import load_dotenv
-from scheduled_tasks import start_scheduler
 import logging
 from database import get_consent_data, save_consent_data, init_db, get_all_consent_data, add_sample_data
 import database
