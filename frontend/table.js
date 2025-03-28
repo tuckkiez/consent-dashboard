@@ -74,23 +74,39 @@ function TableView() {
         }
     };
 
+    // ฟังก์ชันสำหรับ fetch ข้อมูลของวันที่เดียว
     const fetchSingleDate = async (date) => {
         try {
             setLoading(true);
-            const response = await axios.get(`http://localhost:8001/api/consent-data/${date}`);
+            const response = await fetch(`http://localhost:8001/api/manual-fetch/${date}`, {
+                method: 'POST'
+            });
             
-            // อัพเดทข้อมูลของวันที่เลือก
+            if (!response.ok) {
+                throw new Error('Failed to fetch data');
+            }
+
+            // หลังจาก fetch สำเร็จ ดึงข้อมูลใหม่มาแสดง
+            const updatedResponse = await fetch(`http://localhost:8001/api/consent-data/${date}`);
+            if (!updatedResponse.ok) {
+                throw new Error('Failed to get updated data');
+            }
+            
+            const updatedData = await updatedResponse.json();
+            
+            // อัพเดตข้อมูลในตาราง
             setData(prevData => {
                 const newData = [...prevData];
                 const index = newData.findIndex(item => item.date === date);
                 if (index !== -1) {
-                    newData[index] = response.data;
+                    newData[index] = updatedData;
                 }
                 return newData;
             });
-        } catch (e) {
-            setError(e.message);
-        } finally {
+            
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching single date:', error);
             setLoading(false);
         }
     };
@@ -100,50 +116,28 @@ function TableView() {
         return `${day}/${month}/${year}`;
     };
 
+    const formatNumber = (num) => {
+        return num ? num.toLocaleString() : '-';
+    };
+
     // คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
     const totalPages = Math.ceil(data.length / displayCount);
     const startIndex = (currentPage - 1) * displayCount;
     const displayData = data.slice(startIndex, startIndex + displayCount);
 
-    // เพิ่มฟังก์ชันเช็คว่าควรแสดงปุ่ม Fetch หรือไม่
-    const shouldShowFetchButton = (date) => {
-        const today = new Date().toISOString().split('T')[0];
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        // วันปัจจุบันแสดงปุ่มเสมอ
-        if (date === today) {
-            return 'today';
-        }
-        
-        // วันก่อนหน้า แสดงปุ่มเฉพาะเมื่อยังไม่มีข้อมูล
-        const yesterdayData = data.find(row => row.date === date);
-        if (date === yesterdayStr && (!yesterdayData || !yesterdayData.total_consents)) {
-            return 'yesterday';
-        }
-
-        // วันอื่นๆ แสดงปุ่มเมื่อไม่มีข้อมูล
-        const rowData = data.find(row => row.date === date);
-        if (!rowData || !rowData.total_consents) {
-            return 'other';
-        }
-
-        return null;
-    };
-
-    // เพิ่มฟังก์ชันสำหรับข้อความบนปุ่ม
-    const getFetchButtonText = (buttonType, isLoading) => {
-        if (isLoading) return 'Loading...';
-        
-        switch (buttonType) {
-            case 'today':
-                return 'Refresh Now';
-            case 'yesterday':
-                return 'Fetch Yesterday';
-            default:
-                return 'Fetch';
-        }
+    // ฟังก์ชันสำหรับแสดงปุ่ม Fetch
+    const renderFetchButton = (date) => {
+        return (
+            <button
+                onClick={() => fetchSingleDate(date)}
+                className={`px-3 py-1 text-white rounded ${
+                    loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
+                } bg-blue-500`}
+                disabled={loading}
+            >
+                {loading ? 'Fetching...' : 'Fetch'}
+            </button>
+        );
     };
 
     if (error) {
@@ -204,9 +198,9 @@ function TableView() {
                         <tr className="bg-gray-100">
                             <th className="px-4 py-2 border">Date</th>
                             <th className="px-4 py-2 border">Total Consents</th>
-                            <th className="px-4 py-2 border">Privacy Policy Consents</th>
-                            <th className="px-4 py-2 border">Marketing Consents</th>
-                            <th className="px-4 py-2 border">Marketing Consent %</th>
+                            <th className="px-4 py-2 border">Privacy Policy</th>
+                            <th className="px-4 py-2 border">Marketing</th>
+                            <th className="px-4 py-2 border">Marketing %</th>
                             <th className="px-4 py-2 border">F1 Channel</th>
                             <th className="px-4 py-2 border">KP Channel</th>
                             <th className="px-4 py-2 border">GWL Channel</th>
@@ -217,39 +211,24 @@ function TableView() {
                     </thead>
                     <tbody>
                         {displayData.map((row, index) => {
-                            const buttonType = shouldShowFetchButton(row.date);
                             return (
                                 <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
                                     <td className="px-4 py-2 border">{formatDate(row.date)}</td>
-                                    <td className="px-4 py-2 border text-right">{row.total_consents || '-'}</td>
-                                    <td className="px-4 py-2 border text-right">{row.privacy_policy_consents || '-'}</td>
-                                    <td className="px-4 py-2 border text-right">{row.marketing_consents || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.total_consents)}</td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.privacy_policy_consents)}</td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.marketing_consents)}</td>
                                     <td className="px-4 py-2 border text-right">
                                         {row.marketing_consent_percentage ? `${row.marketing_consent_percentage.toFixed(2)}%` : '-'}
                                     </td>
-                                    <td className="px-4 py-2 border text-right">{row.f1_channel_consents || '-'}</td>
-                                    <td className="px-4 py-2 border text-right">{row.kp_channel_consents || '-'}</td>
-                                    <td className="px-4 py-2 border text-right">{row.gwl_channel_consents || '-'}</td>
-                                    <td className="px-4 py-2 border text-right">{row.dropoff_count || '-'}</td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.f1_channel_consents)}</td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.kp_channel_consents)}</td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.gwl_channel_consents)}</td>
+                                    <td className="px-4 py-2 border text-right">{formatNumber(row.dropoff_count)}</td>
                                     <td className="px-4 py-2 border text-right">
                                         {row.dropoff_percentage ? `${row.dropoff_percentage.toFixed(2)}%` : '-'}
                                     </td>
                                     <td className="px-4 py-2 border text-center">
-                                        {buttonType && (
-                                            <button
-                                                onClick={() => fetchSingleDate(row.date)}
-                                                className={`px-3 py-1 text-white rounded disabled:opacity-50 ${
-                                                    buttonType === 'today'
-                                                        ? 'bg-green-500 hover:bg-green-600'  // วันปัจจุบัน
-                                                        : buttonType === 'yesterday'
-                                                        ? 'bg-yellow-500 hover:bg-yellow-600'  // วันก่อนหน้า
-                                                        : 'bg-blue-500 hover:bg-blue-600'  // วันอื่นๆ
-                                                }`}
-                                                disabled={loading}
-                                            >
-                                                {getFetchButtonText(buttonType, loading)}
-                                            </button>
-                                        )}
+                                        {renderFetchButton(row.date)}
                                     </td>
                                 </tr>
                             );

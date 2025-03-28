@@ -514,14 +514,17 @@ async def get_historical_data(start_date: str, end_date: str):
         print(f"Error in historical data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/fetch-data/manual")
-async def manual_fetch():
-    """Manually trigger data fetch for today"""
+@app.post("/api/manual-fetch/{date}")
+async def manual_fetch(date: str):
+    """Manual fetch data for specific date"""
     logger = logging.getLogger(__name__)
     try:
-        today = datetime.now().strftime('%Y-%m-%d')
-        await ensure_user_data_exists(today)
-        return {"status": "success", "message": f"Data fetched for {today}"}
+        # ดึงข้อมูลจาก API โดยตรง ไม่เช็ค database
+        consent_data = await fetch_consent_data(date)
+        if consent_data:
+            return {"status": "success", "message": f"Data fetched for {date}"}
+        else:
+            return {"status": "error", "message": "Failed to fetch data"}
     except Exception as e:
         logger.error(f"Error in manual fetch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
