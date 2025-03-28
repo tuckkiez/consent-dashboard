@@ -1,10 +1,34 @@
 const { useState, useEffect } = React;
 
 const LoadingModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-gray-700">Loading data...</p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center transform transition-all duration-300 ease-in-out">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-6"></div>
+            <p className="text-gray-700 text-lg font-medium">Loading...</p>
+        </div>
+    </div>
+);
+
+const PaginationControls = ({ currentPage, totalItems, displayCount, onPageChange }) => (
+    <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-700">
+            Showing {(currentPage - 1) * displayCount + 1} to {Math.min(currentPage * displayCount, totalItems)} of {totalItems} entries
+        </div>
+        <div className="flex space-x-2">
+            <button
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+                Previous
+            </button>
+            <button
+                onClick={() => onPageChange(Math.min(Math.ceil(totalItems / displayCount), currentPage + 1))}
+                disabled={currentPage >= Math.ceil(totalItems / displayCount)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+                Next
+            </button>
         </div>
     </div>
 );
@@ -13,7 +37,6 @@ function TableView() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [displayCount, setDisplayCount] = useState(20);
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -153,92 +176,110 @@ function TableView() {
     }
 
     return (
-        <div className="p-4">
-            {loading && <LoadingModal />}
-            
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Consent Data Table</h2>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <label className="text-sm text-gray-600">Show:</label>
-                        <select
-                            value={displayCount}
-                            onChange={(e) => setDisplayCount(Number(e.target.value))}
-                            className="border rounded px-2 py-1"
-                        >
-                            <option value={10}>10 days</option>
-                            <option value={20}>20 days</option>
-                            <option value={50}>50 days</option>
-                        </select>
+        <div className="min-h-screen bg-gray-50 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    {/* Header Section */}
+                    <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-800">
+                        <h2 className="text-2xl font-bold text-white">Consent Data Table</h2>
+                        <p className="mt-1 text-blue-100">Historical consent data overview</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-50"
-                        >
-                            Previous
-                        </button>
-                        <span className="text-sm text-gray-600">
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-50"
-                        >
-                            Next
-                        </button>
+
+                    {/* Controls Section */}
+                    <div className="p-6 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                        <div className="text-sm text-gray-700">
+                            Showing {(currentPage - 1) * displayCount + 1} to {Math.min(currentPage * displayCount, data.length)} of {data.length} entries
+                        </div>
+                        <div className="flex items-center space-x-6">
+                            <div className="w-40">
+                                <select
+                                    value={displayCount}
+                                    onChange={(e) => setDisplayCount(Number(e.target.value))}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                >
+                                    <option value="10">10 rows</option>
+                                    <option value="20">20 rows</option>
+                                    <option value="50">50 rows</option>
+                                    <option value="100">100 rows</option>
+                                </select>
+                            </div>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(data.length / displayCount), p + 1))}
+                                    disabled={currentPage >= Math.ceil(data.length / displayCount)}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Table Section */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Consents</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Privacy Policy</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Marketing</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Marketing %</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">F1</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">KP</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">GWL</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoffs</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoff %</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">New Users</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {displayData.map((row, index) => (
+                                    <tr key={index} className="hover:bg-gray-50 transition-colors duration-200">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(row.date)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">{formatNumber(row.total_consents)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.privacy_policy_consents)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.marketing_consents)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                            <span className={`px-2 py-1 rounded-full ${row.marketing_consent_percentage > 50 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                {row.marketing_consent_percentage ? `${row.marketing_consent_percentage.toFixed(2)}%` : '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.f1_channel_consents)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.kp_channel_consents)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.gwl_channel_consents)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.dropoff_count)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                            <span className={`px-2 py-1 rounded-full ${row.dropoff_percentage < 30 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                {row.dropoff_percentage ? `${row.dropoff_percentage.toFixed(2)}%` : '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.new_users)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Bottom Pagination Section */}
+                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                        <PaginationControls
+                            currentPage={currentPage}
+                            totalItems={data.length}
+                            displayCount={displayCount}
+                            onPageChange={setCurrentPage}
+                        />
                     </div>
                 </div>
             </div>
-
-            <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-300">
-                    <thead>
-                        <tr className="bg-gray-100">
-                            <th className="px-4 py-2 border">Date</th>
-                            <th className="px-4 py-2 border">Total Consents</th>
-                            <th className="px-4 py-2 border">Privacy Policy</th>
-                            <th className="px-4 py-2 border">Marketing</th>
-                            <th className="px-4 py-2 border">Marketing %</th>
-                            <th className="px-4 py-2 border">F1 Channel</th>
-                            <th className="px-4 py-2 border">KP Channel</th>
-                            <th className="px-4 py-2 border">GWL Channel</th>
-                            <th className="px-4 py-2 border">Dropoff Count</th>
-                            <th className="px-4 py-2 border">Dropoff %</th>
-                            <th className="px-4 py-2 border">New Users</th>
-                            <th className="px-4 py-2 border">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {displayData.map((row, index) => {
-                            return (
-                                <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                                    <td className="px-4 py-2 border">{formatDate(row.date)}</td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.total_consents)}</td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.privacy_policy_consents)}</td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.marketing_consents)}</td>
-                                    <td className="px-4 py-2 border text-right">
-                                        {row.marketing_consent_percentage ? `${row.marketing_consent_percentage.toFixed(2)}%` : '-'}
-                                    </td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.f1_channel_consents)}</td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.kp_channel_consents)}</td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.gwl_channel_consents)}</td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.dropoff_count)}</td>
-                                    <td className="px-4 py-2 border text-right">
-                                        {row.dropoff_percentage ? `${row.dropoff_percentage.toFixed(2)}%` : '-'}
-                                    </td>
-                                    <td className="px-4 py-2 border text-right">{formatNumber(row.new_users)}</td>
-                                    <td className="px-4 py-2 border text-center">
-                                        {renderFetchButton(row.date)}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+            {loading && <LoadingModal />}
         </div>
     );
 }
