@@ -201,7 +201,7 @@ function TableView() {
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                     {/* Header Section */}
                     <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-800">
-                        <h2 className="text-2xl font-bold text-white">Consent Data Table</h2>
+                        <h2 className="text-2xl font-bold text-white">New User Registration Consent Data</h2>
                         <p className="mt-1 text-blue-100">Historical consent data overview</p>
                     </div>
 

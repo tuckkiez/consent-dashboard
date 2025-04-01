@@ -151,7 +151,7 @@ function DashboardView({ data, chartData }) {
                 {/* Header */}
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
                     <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-800">
-                        <h2 className="text-2xl font-bold text-white">Consent Dashboard</h2>
+                        <h2 className="text-2xl font-bold text-white">New User Registration Consent Dashboard</h2>
                         <p className="mt-1 text-blue-100">Real-time consent analytics overview</p>
                     </div>
                 </div>
