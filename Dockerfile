@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
+
+# ติดตั้ง numpy ก่อนเพื่อหลีกเลี่ยงปัญหา binary incompatibility
+RUN pip install --no-cache-dir numpy==1.24.3
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
