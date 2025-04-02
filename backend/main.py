@@ -621,6 +621,62 @@ async def get_daily_stats():
         print(f"Error getting daily stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/check-csv-files")
+async def check_csv_files():
+    """Check if CSV files exist in the data directory"""
+    logger = logging.getLogger(__name__)
+    try:
+        # สร้างโฟลเดอร์ data ถ้ายังไม่มี
+        data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+        os.makedirs(data_dir, exist_ok=True)
+        
+        # ตรวจสอบว่ามีไฟล์ CSV อยู่หรือไม่
+        csv_files = [f for f in os.listdir(data_dir) if f.endswith(".csv")]
+        
+        # จัดเตรียมข้อมูลที่จะส่งกลับ
+        result = {
+            "data_directory": data_dir,
+            "exists": os.path.exists(data_dir),
+            "csv_files": csv_files,
+            "file_count": len(csv_files),
+            "last_modified": None,
+            "disk_info": {
+                "total": None,
+                "used": None,
+                "free": None
+            }
+        }
+        
+        # ถ้ามีไฟล์ CSV อยู่ หาวันที่แก้ไขล่าสุด
+        if csv_files:
+            latest_file = max(
+                [os.path.join(data_dir, f) for f in csv_files],
+                key=os.path.getmtime
+            )
+            result["last_modified"] = datetime.fromtimestamp(
+                os.path.getmtime(latest_file)
+            ).isoformat()
+        
+        # ตรวจสอบพื้นที่ดิสก์
+        try:
+            import shutil
+            total, used, free = shutil.disk_usage("/")
+            result["disk_info"] = {
+                "total": total,
+                "used": used,
+                "free": free
+            }
+        except Exception as e:
+            logger.warning(f"Could not get disk usage: {str(e)}")
+        
+        logger.info(f"CSV files check result: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error checking CSV files: {str(e)}")
+        logger.exception("Full traceback:")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and start scheduler"""
