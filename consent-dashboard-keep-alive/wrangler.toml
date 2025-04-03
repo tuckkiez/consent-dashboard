@@ -1,0 +1,9 @@
+name = "consent-dashboard-keep-alive"
+main = "keep-alive-worker.js"
+compatibility_date = "2024-04-01"
+
+[build]
+command = ""
+
+[env.production]
+compatibility_date = "2024-04-01"
