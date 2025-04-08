@@ -434,7 +434,7 @@ async def fetch_consent_data(date: str):
     return response_data
 
 async def daily_data_fetch():
-    """ทำงานทุกวันตอนเที่ยงคืน 2 นาที เพื่อดึงข้อมูลของวันก่อนหน้า"""
+    """ทำงานทุกวันตอน 05:00 (ตี 5) เพื่อดึงข้อมูลของวันก่อนหน้า"""
     try:
         # 1. คำนวณวันที่
         today = datetime.now()
@@ -459,14 +459,14 @@ def start_scheduler():
     """เริ่มต้น scheduler สำหรับ daily data fetch"""
     scheduler = AsyncIOScheduler()
     
-    # ตั้งให้ทำงานทุกวันเวลาเที่ยงคืน 2 นาที
+    # ตั้งให้ทำงานทุกวันเวลา 05:00 (ตี 5)
     scheduler.add_job(daily_data_fetch, 'cron', 
-                     hour=0, 
-                     minute=2,
+                     hour=5, 
+                     minute=0,
                      id='daily_fetch')
     
     scheduler.start()
-    print("Debug - Scheduler started - จะทำงานทุกวันเวลาเที่ยงคืน 2 นาที")
+    print("Debug - Scheduler started - จะทำงานทุกวันเวลา 05:00 (ตี 5)")
 
 @app.get("/api/consent-data/{date}")
 async def get_consent_data(date: str):
