@@ -690,5 +690,6 @@ if __name__ == "__main__":
 
 
 @app.get("/ping")
+@app.head("/ping")
 def ping():
     return JSONResponse(content={"status": "ok"})
