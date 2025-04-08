@@ -17,6 +17,7 @@ import logging
 from database import get_consent_data, save_consent_data, init_db, get_all_consent_data, add_sample_data
 import database
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
@@ -686,3 +687,8 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+
+
+@app.get("/ping")
+def ping():
+    return JSONResponse(content={"status": "ok"})
