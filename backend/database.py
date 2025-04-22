@@ -281,3 +281,15 @@ def add_sample_data():
     finally:
         if conn:
             conn.close()
+
+def delete_consent_data_by_date(date: str):
+    """Delete consent data for a specific date"""
+    import sqlite3
+    conn = sqlite3.connect('consent_data.db')
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM consent_data WHERE date = ?", (date,))
+        conn.commit()
+        print(f"Deleted consent data for {date}")
+    finally:
+        conn.close()

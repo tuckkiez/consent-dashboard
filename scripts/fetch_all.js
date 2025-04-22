@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 async function fetchAllDates() {
-    const startDate = new Date('2025-02-27');
+    const startDate = new Date('2025-04-22');
     const today = new Date();
     let currentDate = startDate;
 
@@ -10,7 +10,7 @@ async function fetchAllDates() {
         console.log(`Fetching ${dateStr}...`);
         
         try {
-            await axios.get(`http://localhost:8001/api/consent-data/${dateStr}`);
+            await axios.get(`http://127.0.0.1:8001/api/consent-data/${dateStr}`);
             console.log(`✓ Fetched ${dateStr}`);
             await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (error) {

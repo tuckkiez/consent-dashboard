@@ -32,6 +32,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Manual endpoint for testing daily_data_fetch
+@app.get('/api/manual-daily-fetch')
+async def manual_daily_fetch():
+    from main import daily_data_fetch
+    await daily_data_fetch()
+    return {'status': 'ok'}
+
 # Load environment variables
 ONETRUST_API_TOKEN = os.getenv("ONETRUST_API_TOKEN")
 AUTH0_CLIENT_ID = os.getenv("AUTH0_CLIENT_ID")
@@ -688,6 +696,11 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
 
+@app.delete("/api/consent-data/{date}")
+def delete_consent_data(date: str):
+    import database
+    database.delete_consent_data_by_date(date)
+    return {"status": "deleted", "date": date}
 
 @app.get("/ping")
 @app.head("/ping")

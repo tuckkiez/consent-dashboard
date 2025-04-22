@@ -34,7 +34,7 @@ function App() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`http://localhost:8000/api/consent-data/${date}`)
+      const response = await axios.get(`http://localhost:8001/api/consent-data/${date}`)
       setData(response.data)
     } catch (error) {
       toast({
