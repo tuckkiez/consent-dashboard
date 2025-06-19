@@ -467,14 +467,14 @@ def start_scheduler():
     """เริ่มต้น scheduler สำหรับ daily data fetch"""
     scheduler = AsyncIOScheduler()
     
-    # ตั้งให้ทำงานทุกวันเวลา 05:00 (ตี 5)
+    # ตั้งให้ทำงานทุกวันเวลา 02:00 (ตี 2)
     scheduler.add_job(daily_data_fetch, 'cron', 
-                     hour=5, 
+                     hour=2,
                      minute=0,
                      id='daily_fetch')
     
     scheduler.start()
-    print("Debug - Scheduler started - จะทำงานทุกวันเวลา 05:00 (ตี 5)")
+    print("Debug - Scheduler started - จะทำงานทุกวันเวลา 02:00 (ตี 2)")
 
 @app.get("/api/consent-data/{date}")
 async def get_consent_data(date: str):
