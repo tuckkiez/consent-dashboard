@@ -8,6 +8,8 @@
 
 #### Backend
 ```bash
+python3.10 -m venv venv
+source venv/bin/activate 
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --port 8001 --reload
