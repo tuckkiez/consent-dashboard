@@ -21,12 +21,6 @@ python -m http.server 3000
 
 เข้าใช้งานที่ http://localhost:3000
 
-#### Fetch all
-```
-cd scripts
-node fetch_all.js
-```
-
 ### วิธี Deploy
 
 #### Frontend (GitHub Pages)
