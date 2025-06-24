@@ -4,9 +4,6 @@ on:
   schedule:
     # รันทุกวันเวลา 05:00 น. ตามเวลาไทย (22:00 UTC)
     - cron: '0 22 * * *'
-        # ตั้ง timezone เป็น Asia/Bangkok
-        # หมายเหตุ: GitHub Actions ใช้ UTC ดังนั้นต้องคำนวณเวลาให้ตรงกับ 05:00 น. ไทย (22:00 UTC)
-
   # อนุญาตให้รันด้วยตนเองได้
   workflow_dispatch:
 
@@ -21,17 +18,18 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'scripts/package-lock.json'
         
     - name: Install dependencies
+      working-directory: ./scripts
       run: |
-        cd scripts
-        npm install
+        npm ci --production=false
         
     - name: Run fetch
-      run: |
-        cd scripts
-        node fetch_all.js
+      working-directory: ./scripts
+      run: npm start
       env:
-        # ใส่ environment variables ที่จำเป็น
         NODE_ENV: production
+        # ใส่ environment variables ที่จำเป็นเพิ่มเติมที่นี่
