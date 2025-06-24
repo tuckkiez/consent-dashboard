@@ -1,5 +1,27 @@
 const axios = require('axios');
 
+async function refetchDate(dateStr) {
+    console.log(`Refetching data for ${dateStr}...`);
+    
+    try {
+        // ลบข้อมูลเก่าก่อน
+        await axios.delete(`http://127.0.0.1:8001/api/consent-data/${dateStr}`);
+        console.log(`✓ Deleted old data for ${dateStr}`);
+        
+        // รอสักครู่ให้ backend จัดการการลบข้อมูล
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // ดึงข้อมูลใหม่
+        await axios.get(`http://127.0.0.1:8001/api/consent-data/${dateStr}`);
+        console.log(`✓ Fetched new data for ${dateStr}`);
+        
+        return true;
+    } catch (error) {
+        console.error(`✗ Error refetching ${dateStr}:`, error.message);
+        return false;
+    }
+}
+
 async function fetchAllDates() {
     // ตั้งค่า startDate เป็นวันที่ 18 มิ.ย. 2568 เวลา 00:00:00 ตามเวลาไทย
     // โดยใช้ Date.UTC เพื่อกำหนดเวลาเป็น 17:00 UTC ของวันที่ 17 มิ.ย. (ซึ่งเท่ากับ 00:00 วันที่ 18 มิ.ย. ตามเวลาไทย)
@@ -48,4 +70,14 @@ async function fetchAllDates() {
     console.log('Done fetching all dates!');
 }
 
-fetchAllDates();
+// ตัวอย่างการใช้งาน refetchDate
+refetchDate('2025-06-19').then(success => {
+    if (success) {
+        console.log('Refetch completed successfully!');
+    } else {
+        console.log('Refetch failed.');
+    }
+});
+
+// เรียกใช้แบบปกติ
+fetchAllDates().catch(console.error);
