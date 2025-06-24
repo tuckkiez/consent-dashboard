@@ -29,7 +29,10 @@ jobs:
         
     - name: Run fetch
       working-directory: ./scripts
-      run: npm start
+      run: |
+        echo "Using API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://consent-dashboard.onrender.com' }}"
+        npm start
       env:
         NODE_ENV: production
-        # ใส่ environment variables ที่จำเป็นเพิ่มเติมที่นี่
+        # ใช้ API URL จาก secrets หรือใช้ค่า default
+        API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://consent-dashboard.onrender.com' }}

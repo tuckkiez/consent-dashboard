@@ -1,18 +1,26 @@
 const axios = require('axios');
 
+// กำหนด URL ของ API
+const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8001';
+
+// ฟังก์ชันสำหรับสร้าง URL แบบเต็ม
+const getApiUrl = (path) => {
+  return `${API_BASE_URL}${path}`;
+};
+
 async function refetchDate(dateStr) {
     console.log(`Refetching data for ${dateStr}...`);
     
     try {
         // ลบข้อมูลเก่าก่อน
-        await axios.delete(`http://127.0.0.1:8001/api/consent-data/${dateStr}`);
+        await axios.delete(getApiUrl(`/api/consent-data/${dateStr}`));
         console.log(`✓ Deleted old data for ${dateStr}`);
         
         // รอสักครู่ให้ backend จัดการการลบข้อมูล
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // ดึงข้อมูลใหม่
-        await axios.get(`http://127.0.0.1:8001/api/consent-data/${dateStr}`);
+        await axios.get(getApiUrl(`/api/consent-data/${dateStr}`));
         console.log(`✓ Fetched new data for ${dateStr}`);
         
         return true;
@@ -57,7 +65,7 @@ async function fetchAllDates() {
         console.log(`Fetching ${dateStr}...`);
         
         try {
-            await axios.get(`http://127.0.0.1:8001/api/consent-data/${dateStr}`);
+            await axios.get(getApiUrl(`/api/consent-data/${dateStr}`));
             console.log(`✓ Fetched ${dateStr}`);
             await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (error) {
@@ -71,13 +79,24 @@ async function fetchAllDates() {
 }
 
 // ตัวอย่างการใช้งาน refetchDate
-refetchDate('2025-06-19').then(success => {
-    if (success) {
-        console.log('Refetch completed successfully!');
-    } else {
-        console.log('Refetch failed.');
-    }
-});
+// refetchDate('2025-06-19').then(success => {
+//     if (success) {
+//         console.log('Refetch completed successfully!');
+//     } else {
+//         console.log('Refetch failed.');
+//     }
+// });
 
-// เรียกใช้แบบปกติ
-fetchAllDates().catch(console.error);
+// ตรวจสอบว่าถูกเรียกโดยตรงหรือไม่
+if (require.main === module) {
+    fetchAllDates().catch(error => {
+        console.error('Error in fetchAllDates:', error);
+        process.exit(1);
+    });
+}
+
+// Export ฟังก์ชันเพื่อให้ไฟล์อื่นสามารถเรียกใช้ได้
+module.exports = {
+    fetchAllDates,
+    refetchDate
+};
