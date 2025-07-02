@@ -15,17 +15,8 @@
   </head>
   <body class="bg-gray-50">
     <div id="root"></div>
-    <!-- <script type="text/babel" src="table.js"></script>
-    <script type="text/babel" src="dashboard.js"></script> -->
-    <script>
-      // เพิ่ม timestamp เพื่อ bypass cache
-      document.write(
-        '<script src="dashboard.js?v=' + new Date().getTime() + '"><\/script>'
-      );
-      document.write(
-        '<script src="table.js?v=' + new Date().getTime() + '"><\/script>'
-      );
-    </script>
+    <script type="text/babel" src="table.js?v=1.0"></script>
+    <script type="text/babel" src="dashboard.js?v=1.0"></script>
     <script type="text/babel">
       const { useState } = React;
 
