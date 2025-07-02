@@ -260,9 +260,10 @@ function TableView() {
                                     <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">F1</th>
                                     <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">KP</th>
                                     <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">GWL</th>
-                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoffs</th>
-                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoff %</th>
-                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">New Users</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider" title="Users with multiple profiles">Multiple Profiles</th>
+                                    {/* <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoffs</th> */}
+                                    {/* <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoff %</th>
+                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">New Users</th> */}
                                     <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
@@ -282,12 +283,12 @@ function TableView() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.kp_channel_consents)}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.gwl_channel_consents)}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.dropoff_count)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                                             <span className={`px-2 py-1 rounded-full ${row.dropoff_percentage < 30 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                                 {row.dropoff_percentage ? `${row.dropoff_percentage.toFixed(2)}%` : '-'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.new_users)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.new_users)}</td> */}
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                                             {shouldShowFetchButton(row.date, row) && renderFetchButton(row.date)}
                                         </td>

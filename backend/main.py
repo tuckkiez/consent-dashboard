@@ -229,7 +229,20 @@ async def ensure_user_data_exists(date: str):
             raise
 
 def count_channel_consents(identifiers, df):
-    """นับจำนวน user ที่มี profile แต่ละช่องทาง"""
+    """
+    นับจำนวน user ที่มี profile เพียงช่องทางเดียวเท่านั้น
+    
+    Args:
+        identifiers: รายการ user_id ที่ต้องการตรวจสอบ
+        df: DataFrame ที่มีข้อมูลผู้ใช้
+        
+    Returns:
+        tuple: (f1_count, kp_count, gwl_count, matched_users)
+        - f1_count: จำนวนผู้ใช้ที่มีเฉพาะ f1_profile_id เท่านั้น
+        - kp_count: จำนวนผู้ใช้ที่มีเฉพาะ kp_profile_id เท่านั้น
+        - gwl_count: จำนวนผู้ใช้ที่มีเฉพาะ gwl_profile_id เท่านั้น
+        - matched_users: DataFrame ของผู้ใช้ที่ตรงกับ identifiers
+    """
     if df is None:
         print("Debug - DataFrame is None!")
         return 0, 0, 0, None
@@ -242,20 +255,42 @@ def count_channel_consents(identifiers, df):
     df['user_id'] = df['user_id'].str.strip("'")
     
     # Find matching users in user_id column
-    matched_users = df[df['user_id'].isin(identifiers)]
+    matched_users = df[df['user_id'].isin(identifiers)].copy()
     print(f"Debug - จำนวน user ที่เจอใน CSV: {len(matched_users)}")
     
-    # Count users with each profile type
-    f1_count = matched_users['f1_profile_id'].notna().sum()
-    kp_count = matched_users['kp_profile_id'].notna().sum()
-    gwl_count = matched_users['gwl_profile_id'].notna().sum()
+    # ตรวจสอบว่ามีคอลัมน์ที่จำเป็นหรือไม่
+    required_columns = ['user_id', 'f1_profile_id', 'kp_profile_id', 'gwl_profile_id']
+    if not all(col in matched_users.columns for col in required_columns):
+        print("Debug - ไม่พบคอลัมน์ที่จำเป็นในข้อมูลผู้ใช้")
+        return 0, 0, 0, matched_users
     
-    print(f"Debug - สรุปจำนวน profile:")
-    print(f"Debug - F1: {f1_count}")
-    print(f"Debug - KP: {kp_count}")
-    print(f"Debug - GWL: {gwl_count}")
+    # สร้างคอลัมน์เพื่อระบุว่ามีข้อมูลในแต่ละ profile หรือไม่
+    matched_users['has_f1'] = matched_users['f1_profile_id'].notna()
+    matched_users['has_kp'] = matched_users['kp_profile_id'].notna()
+    matched_users['has_gwl'] = matched_users['gwl_profile_id'].notna()
     
-    return f1_count, kp_count, gwl_count, matched_users
+    # นับจำนวน profile ที่มี
+    matched_users['profile_count'] = matched_users[['has_f1', 'has_kp', 'has_gwl']].sum(axis=1)
+    
+    # กรองเฉพาะผู้ใช้ที่มี profile เพียงช่องทางเดียว
+    single_profile_users = matched_users[matched_users['profile_count'] == 1].copy()
+    
+    # นับจำนวนผู้ใช้ที่มีเฉพาะ profile เดียวในแต่ละช่องทาง
+    f1_count = len(single_profile_users[single_profile_users['has_f1']])
+    kp_count = len(single_profile_users[single_profile_users['has_kp']])
+    gwl_count = len(single_profile_users[single_profile_users['has_gwl']])
+    
+    # นับจำนวนผู้ใช้ที่มีหลาย profile
+    multi_profile_users = len(matched_users[matched_users['profile_count'] > 1])
+    
+    print(f"Debug - สรุปจำนวนผู้ใช้ที่มี profile เพียงช่องทางเดียว:")
+    print(f"Debug - มีเฉพาะ F1: {f1_count} users")
+    print(f"Debug - มีเฉพาะ KP: {kp_count} users")
+    print(f"Debug - มีเฉพาะ GWL: {gwl_count} users")
+    print(f"Debug - มีหลาย profile: {multi_profile_users} users")
+    print(f"Debug - ผู้ใช้ทั้งหมด: {len(matched_users)} users")
+    
+    return f1_count, kp_count, gwl_count, multi_profile_users, matched_users
 
 async def get_onetrust_token():
     """Get access token from OneTrust"""
@@ -422,17 +457,18 @@ async def fetch_consent_data(date: str):
             print(f"Debug - พบข้อมูล CSV columns: {df.columns.tolist()}")
             
             # นับจำนวน profile ของ user ที่ให้ consent
-            f1_count, kp_count, gwl_count, matched_users = count_channel_consents(consent_data["identifiers"], df)
+            f1_count, kp_count, gwl_count, multi_profile_users, matched_users = count_channel_consents(consent_data["identifiers"], df)
+            
+            print(f"Debug - จำนวนผู้ใช้ทั้งหมดที่ให้ consent: {consent_data['total_count']}")
+            print(f"Debug - จำนวนผู้ใช้ที่มีหลาย profile: {multi_profile_users}")
             
             # อัพเดต response data
-            users_with_profile = f1_count + kp_count  # เปลี่ยนวิธีคำนวณ dropoff ให้ใช้แค่ F1 + KP
-            
             response_data.update({
                 "f1_channel_consents": f1_count,
                 "kp_channel_consents": kp_count,
                 "gwl_channel_consents": gwl_count,
-                "dropoff_count": consent_data["total_count"] - users_with_profile,
-                "dropoff_percentage": ((consent_data["total_count"] - users_with_profile) / consent_data["total_count"] * 100) if consent_data["total_count"] > 0 else 0
+                "dropoff_count": multi_profile_users,  # ใช้จำนวนผู้ใช้ที่มีหลาย profile เป็น dropoff count
+                "dropoff_percentage": (multi_profile_users / consent_data["total_count"] * 100) if consent_data["total_count"] > 0 else 0
             })
             
     except Exception as e:

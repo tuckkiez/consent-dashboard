@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // กำหนด URL ของ API
-const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8001';
+const API_BASE_URL = 'http://127.0.0.1:8001';
 
 // ฟังก์ชันสำหรับสร้าง URL แบบเต็ม
 const getApiUrl = (path) => {
@@ -18,7 +18,7 @@ async function refetchDate(dateStr) {
         
         // รอสักครู่ให้ backend จัดการการลบข้อมูล
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // ดึงข้อมูลใหม่
         await axios.get(getApiUrl(`/api/consent-data/${dateStr}`));
         console.log(`✓ Fetched new data for ${dateStr}`);
@@ -30,56 +30,73 @@ async function refetchDate(dateStr) {
     }
 }
 
+// ฟังก์ชันสำหรับแปลงวันที่เป็นรูปแบบ YYYY-MM-DD
+function formatDate(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// ฟังก์ชันแปลงวันที่จาก DD/MM/YYYY เป็น Date object
+function parseDate(dateStr) {
+    const [day, month, year] = dateStr.split('/').map(Number);
+    return new Date(year, month - 1, day);
+}
+
 async function fetchAllDates() {
-    // ตั้ง timezone เป็นไทย (UTC+7)
+    // วันที่เริ่มต้น (27/02/2025)
+    const startDate = parseDate('27/02/2025');
+    
+    // วันที่สิ้นสุด (เมื่อวานของวันนี้)
     const now = new Date();
     const thaiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+    const endDate = new Date(thaiDate);
+    endDate.setDate(endDate.getDate() - 1); // เมื่อวาน
+    endDate.setHours(0, 0, 0, 0);
     
-    // ตั้งเวลาเป็น 00:00:00 ของเมื่อวาน
-    const yesterday = new Date(thaiDate);
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
+    console.log(`กำลังดึงข้อมูลตั้งแต่วันที่ ${formatDate(startDate)} ถึง ${formatDate(endDate)}`);
     
-    // ฟังก์ชันสำหรับแปลงวันที่เป็นรูปแบบ YYYY-MM-DD
-    const formatDate = (date) => {
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+    // วนลูปดึงข้อมูลแต่ละวัน
+    let currentDate = new Date(startDate);
+    let successCount = 0;
+    let failCount = 0;
     
-    const dateStr = formatDate(yesterday);
-    console.log(`กำลังดึงข้อมูลสำหรับวันที่: ${dateStr} (ตามเวลาไทย)`);
-    
-    // เรียกใช้ refetchDate เพื่อลบและดึงข้อมูลใหม่
-    const success = await refetchDate(dateStr);
-    
-    if (success) {
-        console.log(`✓ ดึงข้อมูลสำหรับวันที่ ${dateStr} สำเร็จ`);
-        return true;
-    } else {
-        console.error(`✗ ไม่สามารถดึงข้อมูลสำหรับวันที่ ${dateStr} ได้`);
-        return false;
+    while (currentDate <= endDate) {
+        const dateStr = formatDate(currentDate);
+        console.log(`\n--- กำลังประมวลผลวันที่: ${dateStr} ---`);
+        
+        try {
+            const success = await refetchDate(dateStr);
+            if (success) {
+                console.log(`✓ ดึงข้อมูลวันที่ ${dateStr} สำเร็จ`);
+                successCount++;
+            } else {
+                console.log(`✗ ไม่สามารถดึงข้อมูลวันที่ ${dateStr} ได้`);
+                failCount++;
+            }
+            
+            // รอ 1 วินาทีก่อนที่จะดึงข้อมูลวันถัดไป เพื่อป้องกันการ rate limit
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+        } catch (error) {
+            console.error(`✗ เกิดข้อผิดพลาดในการดึงข้อมูลวันที่ ${dateStr}:`, error.message);
+            failCount++;
+        }
+        
+        // เพิ่มวันถัดไป
+        currentDate.setDate(currentDate.getDate() + 1);
     }
+    
+    console.log('\n=== สรุปผลการดึงข้อมูล ===');
+    console.log(`- จำนวนวันที่ดึงข้อมูลสำเร็จ: ${successCount} วัน`);
+    console.log(`- จำนวนวันที่ดึงข้อมูลไม่สำเร็จ: ${failCount} วัน`);
+    console.log('=========================');
 }
 
-// ตัวอย่างการใช้งาน refetchDate
-// refetchDate('2025-06-19').then(success => {
-//     if (success) {
-//         console.log('Refetch completed successfully!');
-//     } else {
-//         console.log('Refetch failed.');
-//     }
-// });
-
-// ตรวจสอบว่าถูกเรียกโดยตรงหรือไม่
-if (require.main === module) {
-    fetchAllDates().catch(error => {
-        console.error('Error in fetchAllDates:', error);
-        process.exit(1);
-    });
-}
+// เรียกใช้งานฟังก์ชัน fetchAllDates
+fetchAllDates().catch(console.error);
 
 // Export ฟังก์ชันเพื่อให้ไฟล์อื่นสามารถเรียกใช้ได้
 module.exports = {
