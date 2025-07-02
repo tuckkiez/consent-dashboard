@@ -146,18 +146,18 @@ function DashboardView({ data, chartData }) {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
                     <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-800">
-                        <h2 className="text-2xl font-bold text-white">Consent Dashboard</h2>
+                        <h2 className="text-2xl font-bold text-white">New User Registration Consent Dashboard</h2>
                         <p className="mt-1 text-blue-100">Real-time consent analytics overview</p>
                     </div>
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
                     <StatCard 
                         title="Total Consents"
                         value={formatNumber(data.total_consents)}
@@ -168,11 +168,11 @@ function DashboardView({ data, chartData }) {
                         value={formatNumber(data.privacy_policy_consents)}
                         color="text-indigo-600"
                     />
-                    <StatCard 
+                     {/*<StatCard 
                         title="New Users"
                         value={formatNumber(data.new_users)}
                         color="text-purple-600"
-                    />
+                    />*/}
                     <StatCard 
                         title="Marketing Consent"
                         value={formatNumber(data.marketing_consents)}
@@ -183,11 +183,11 @@ function DashboardView({ data, chartData }) {
                         value={`${data.marketing_consent_percentage ? data.marketing_consent_percentage.toFixed(2) : '0.00'}%`}
                         color="text-indigo-600"
                     />
-                    <StatCard 
+                     {/*<StatCard 
                         title="Dropoff Rate"
                         value={`${data.dropoff_percentage ? data.dropoff_percentage.toFixed(2) : '0.00'}%`}
                         color={data.dropoff_percentage < 30 ? 'text-green-600' : 'text-red-600'}
-                    />
+                    />*/}
                 </div>
 
                 {/* Channel Distribution */}
