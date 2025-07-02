@@ -157,7 +157,7 @@ function DashboardView({ data, chartData }) {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
                     <StatCard 
                         title="Total Consents"
                         value={formatNumber(data.total_consents)}
@@ -168,11 +168,11 @@ function DashboardView({ data, chartData }) {
                         value={formatNumber(data.privacy_policy_consents)}
                         color="text-indigo-600"
                     />
-                    <StatCard 
+                     {/*<StatCard 
                         title="New Users"
                         value={formatNumber(data.new_users)}
                         color="text-purple-600"
-                    />
+                    />*/}
                     <StatCard 
                         title="Marketing Consent"
                         value={formatNumber(data.marketing_consents)}
@@ -183,11 +183,11 @@ function DashboardView({ data, chartData }) {
                         value={`${data.marketing_consent_percentage ? data.marketing_consent_percentage.toFixed(2) : '0.00'}%`}
                         color="text-indigo-600"
                     />
-                    <StatCard 
+                     {/*<StatCard 
                         title="Dropoff Rate"
                         value={`${data.dropoff_percentage ? data.dropoff_percentage.toFixed(2) : '0.00'}%`}
                         color={data.dropoff_percentage < 30 ? 'text-green-600' : 'text-red-600'}
-                    />
+                    />*/}
                 </div>
 
                 {/* Channel Distribution */}
