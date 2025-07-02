@@ -264,7 +264,7 @@ function TableView() {
                                     {/* <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoffs</th> */}
                                     {/* <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Dropoff %</th>
                                     <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">New Users</th> */}
-                                    <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                    {/* <th className="px-6 py-3 border-b border-gray-200 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th> */}
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -289,9 +289,9 @@ function TableView() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(row.new_users)}</td> */}
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                         {/*<td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                                             {shouldShowFetchButton(row.date, row) && renderFetchButton(row.date)}
-                                        </td>
+                                        </td>*/}
                                     </tr>
                                 ))}
                             </tbody>
