@@ -99,7 +99,23 @@ async function fetchAllDates() {
 fetchAllDates().catch(console.error);
 
 // Export ฟังก์ชันเพื่อให้ไฟล์อื่นสามารถเรียกใช้ได้
+async function refetchSingleDate(dateStr) {
+    console.log(`Refetching ONLY data for ${dateStr}...`);
+    try {
+        await axios.delete(getApiUrl(`/api/consent-data/${dateStr}`));
+        console.log(`✓ Deleted old data for ${dateStr}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await axios.get(getApiUrl(`/api/consent-data/${dateStr}`));
+        console.log(`✓ Fetched new data for ${dateStr}`);
+        return true;
+    } catch (error) {
+        console.error(`✗ Error refetching ${dateStr}:`, error.message);
+        return false;
+    }
+}
+
 module.exports = {
     fetchAllDates,
-    refetchDate
+    refetchDate,
+    refetchSingleDate
 };

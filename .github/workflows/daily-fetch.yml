@@ -2,6 +2,8 @@ name: Daily Data Fetch
 
 on:
   schedule:
+    # รันทุกวันเวลา 8 โมงเช้าเวลาไทย (1:00 UTC)
+    - cron: '0 1 * * *'
     # รันทุกวันเวลา 05:00 น. ตามเวลาไทย (22:00 UTC)
     - cron: '0 22 * * *'
   # อนุญาตให้รันด้วยตนเองได้
@@ -27,12 +29,11 @@ jobs:
       run: |
         npm ci --production=false
         
-    - name: Run fetch
+    - name: Run daily fetch (yesterday only)
       working-directory: ./scripts
       run: |
-        echo "Using API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://consent-dashboard.onrender.com' }}"
-        npm start
+        echo "Using API_BASE_URL: https://consent-dashboard.onrender.com"
+        node fetch_yesterday.js
       env:
         NODE_ENV: production
-        # ใช้ API URL จาก secrets หรือใช้ค่า default
-        API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://consent-dashboard.onrender.com' }}
+        API_BASE_URL: https://consent-dashboard.onrender.com
