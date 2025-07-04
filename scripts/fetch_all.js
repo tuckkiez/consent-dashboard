@@ -1,7 +1,7 @@
 const axios = require('axios');
 
-// กำหนด URL ของ API
-const API_BASE_URL = 'http://127.0.0.1:8001';
+// กำหนด URL ของ API จาก environment variable (สำหรับ workflow/production)
+const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8001';
 
 // ฟังก์ชันสำหรับสร้าง URL แบบเต็ม
 const getApiUrl = (path) => {
