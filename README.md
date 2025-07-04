@@ -72,3 +72,24 @@ python -m http.server 3000
 - `/api/manual-fetch/{date}`: สั่งให้ backend ดึงข้อมูลจาก OneTrust API สำหรับวันที่ระบุ
 - `/api/dashboard-summary`: ดึงข้อมูลสรุปสำหรับ dashboard
 - `/api/daily-stats`: ดึงข้อมูลสถิติรายวันสำหรับกราฟ
+
+---
+
+## วิธีใช้งานสคริปต์ดึงข้อมูล (fetch_all.js)
+
+### ดึงข้อมูลของ "เมื่อวาน" (ค่า default)
+```bash
+node scripts/fetch_all.js
+```
+
+### ดึงข้อมูลช่วงวันที่ที่ต้องการ
+```bash
+node scripts/fetch_all.js --start-date=YYYY-MM-DD --end-date=YYYY-MM-DD
+```
+ตัวอย่าง:
+```bash
+node scripts/fetch_all.js --start-date=2025-07-01 --end-date=2025-07-03
+```
+
+- ถ้าไม่ระบุ argument ใดๆ จะดึงข้อมูลของเมื่อวานโดยอัตโนมัติ (เหมาะกับใช้งานใน workflow หรือ cron job)
+- สามารถใช้ร่วมกับ GitHub Actions เพื่อดึงข้อมูลอัตโนมัติทุกวัน

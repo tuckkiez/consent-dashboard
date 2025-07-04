@@ -33,7 +33,7 @@ jobs:
       working-directory: ./scripts
       run: |
         echo "Using API_BASE_URL: https://consent-dashboard.onrender.com"
-        node fetch_yesterday.js
+        node fetch_all.js
       env:
         NODE_ENV: production
         API_BASE_URL: https://consent-dashboard.onrender.com

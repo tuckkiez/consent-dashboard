@@ -95,8 +95,30 @@ async function fetchAllDates() {
     console.log('=========================');
 }
 
-// เรียกใช้งานฟังก์ชัน fetchAllDates
-fetchAllDates().catch(console.error);
+// ===== เพิ่มส่วนรับ argument จาก command line =====
+const args = process.argv.slice(2);
+let startDateArg = null;
+let endDateArg = null;
+
+args.forEach((arg) => {
+    if (arg.startsWith('--start-date=')) {
+        startDateArg = arg.replace('--start-date=', '');
+    }
+    if (arg.startsWith('--end-date=')) {
+        endDateArg = arg.replace('--end-date=', '');
+    }
+});
+
+function getYesterdayStr() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().slice(0, 10);
+}
+
+const startDate = startDateArg || getYesterdayStr();
+const endDate = endDateArg || getYesterdayStr();
+
+fetchAllDates(startDate, endDate).catch(console.error);
 
 // Export ฟังก์ชันเพื่อให้ไฟล์อื่นสามารถเรียกใช้ได้
 async function refetchSingleDate(dateStr) {
@@ -116,6 +138,6 @@ async function refetchSingleDate(dateStr) {
 
 module.exports = {
     fetchAllDates,
-    refetchDate,
+    refetchSingleDate,
     refetchSingleDate
 };
