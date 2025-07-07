@@ -29,14 +29,6 @@ function DashboardView({ data, chartData }) {
                         backgroundColor: '#6366f120',
                         tension: 0.3,
                         fill: true
-                    },
-                    {
-                        label: 'Dropoff %',
-                        data: chartData.map(d => d.dropoff_percentage),
-                        borderColor: '#ef4444',
-                        backgroundColor: '#ef444420',
-                        tension: 0.3,
-                        fill: true
                     }
                 ]
             },
