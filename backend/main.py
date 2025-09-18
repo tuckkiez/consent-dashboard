@@ -447,11 +447,12 @@ async def fetch_consent_data(date: str):
     
     # ลองโหลดข้อมูล CSV
     try:
-        df = load_user_data(datetime.now().strftime("%Y-%m-%d"))
+        # ใช้ date ที่รับเข้ามาแทนการใช้วันที่ปัจจุบัน
+        df = load_user_data(date)
         if df is None:
-            print("Debug - ไม่พบไฟล์ CSV จะลองดาวน์โหลดใหม่")
-            await ensure_user_data_exists(datetime.now().strftime("%Y-%m-%d"))
-            df = load_user_data(datetime.now().strftime("%Y-%m-%d"))
+            print(f"Debug - ไม่พบไฟล์ CSV สำหรับวันที่ {date} จะลองดาวน์โหลดใหม่")
+            await ensure_user_data_exists(date)
+            df = load_user_data(date)
         
         if df is not None:
             print(f"Debug - พบข้อมูล CSV columns: {df.columns.tolist()}")
@@ -567,9 +568,13 @@ async def get_historical_data(start_date: str, end_date: str):
         while current <= end:
             date_str = current.strftime("%Y-%m-%d")
             try:
-                # ใช้ฟังก์ชัน get_consent_data เดิม
-                data = await get_consent_data_by_date(date_str)
-                results.append(data)
+                # ใช้ logic ของ get_consent_data endpoint ตรง ๆ
+                data = await get_consent_data(date_str)
+                # ConsentStats เป็น pydantic model ให้แปลงเป็น dict
+                if hasattr(data, 'dict'):
+                    results.append(data.dict())
+                else:
+                    results.append(data)
             except Exception as e:
                 print(f"Error fetching data for {date_str}: {str(e)}")
             current += timedelta(days=1)

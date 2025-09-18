@@ -47,7 +47,7 @@ function parseDate(dateStr) {
 
 async function fetchAllDates() {
     // วันที่เริ่มต้น (27/02/2025)
-    const startDate = parseDate('03/07/2025');
+    const startDate = parseDate('29/07/2025');
     
     // วันที่สิ้นสุด (เมื่อวานของวันนี้)
     const now = new Date();
@@ -115,10 +115,12 @@ function getYesterdayStr() {
     return yesterday.toISOString().slice(0, 10);
 }
 
-const startDate = startDateArg || getYesterdayStr();
-const endDate = endDateArg || getYesterdayStr();
-
-fetchAllDates(startDate, endDate).catch(console.error);
+// Only run fetchAllDates if this script is executed directly, not when required
+if (require.main === module) {
+    const startDate = startDateArg || getYesterdayStr();
+    const endDate = endDateArg || getYesterdayStr();
+    fetchAllDates(startDate, endDate).catch(console.error);
+}
 
 // Export ฟังก์ชันเพื่อให้ไฟล์อื่นสามารถเรียกใช้ได้
 async function refetchSingleDate(dateStr) {
