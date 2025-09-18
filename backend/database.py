@@ -216,7 +216,7 @@ def get_all_consent_data():
                 new_users,
                 created_at
             FROM consent_data
-            ORDER BY date DESC
+            ORDER BY date(date) DESC
         """)
         data = cursor.fetchall()
         
