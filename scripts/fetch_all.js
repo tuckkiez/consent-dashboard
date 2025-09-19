@@ -47,7 +47,7 @@ function parseDate(dateStr) {
 
 async function fetchAllDates() {
     // วันที่เริ่มต้น (27/02/2025)
-    const startDate = parseDate('29/07/2025');
+    const startDate = parseDate('18/09/2025');
     
     // วันที่สิ้นสุด (เมื่อวานของวันนี้)
     const now = new Date();
