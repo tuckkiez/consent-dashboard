@@ -5,24 +5,24 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8001';
 
 // ฟังก์ชันสำหรับสร้าง URL แบบเต็ม
 const getApiUrl = (path) => {
-  return `${API_BASE_URL}${path}`;
+    return `${API_BASE_URL}${path}`;
 };
 
 async function refetchDate(dateStr) {
     console.log(`Refetching data for ${dateStr}...`);
-    
+
     try {
         // ลบข้อมูลเก่าก่อน
         await axios.delete(getApiUrl(`/api/consent-data/${dateStr}`));
         console.log(`✓ Deleted old data for ${dateStr}`);
-        
+
         // รอสักครู่ให้ backend จัดการการลบข้อมูล
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // ดึงข้อมูลใหม่
         await axios.get(getApiUrl(`/api/consent-data/${dateStr}`));
         console.log(`✓ Fetched new data for ${dateStr}`);
-        
+
         return true;
     } catch (error) {
         console.error(`✗ Error refetching ${dateStr}:`, error.message);
@@ -47,26 +47,26 @@ function parseDate(dateStr) {
 
 async function fetchAllDates() {
     // วันที่เริ่มต้น (27/02/2025)
-    const startDate = parseDate('23/09/2025');
-    
+    const startDate = parseDate('24/09/2025');
+
     // วันที่สิ้นสุด (เมื่อวานของวันนี้)
     const now = new Date();
     const thaiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
     const endDate = new Date(thaiDate);
     endDate.setDate(endDate.getDate() - 1); // เมื่อวาน
     endDate.setHours(0, 0, 0, 0);
-    
+
     console.log(`กำลังดึงข้อมูลตั้งแต่วันที่ ${formatDate(startDate)} ถึง ${formatDate(endDate)}`);
-    
+
     // วนลูปดึงข้อมูลแต่ละวัน
     let currentDate = new Date(startDate);
     let successCount = 0;
     let failCount = 0;
-    
+
     while (currentDate <= endDate) {
         const dateStr = formatDate(currentDate);
         console.log(`\n--- กำลังประมวลผลวันที่: ${dateStr} ---`);
-        
+
         try {
             const success = await refetchDate(dateStr);
             if (success) {
@@ -76,19 +76,19 @@ async function fetchAllDates() {
                 console.log(`✗ ไม่สามารถดึงข้อมูลวันที่ ${dateStr} ได้`);
                 failCount++;
             }
-            
+
             // รอ 1 วินาทีก่อนที่จะดึงข้อมูลวันถัดไป เพื่อป้องกันการ rate limit
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
         } catch (error) {
             console.error(`✗ เกิดข้อผิดพลาดในการดึงข้อมูลวันที่ ${dateStr}:`, error.message);
             failCount++;
         }
-        
+
         // เพิ่มวันถัดไป
         currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     console.log('\n=== สรุปผลการดึงข้อมูล ===');
     console.log(`- จำนวนวันที่ดึงข้อมูลสำเร็จ: ${successCount} วัน`);
     console.log(`- จำนวนวันที่ดึงข้อมูลไม่สำเร็จ: ${failCount} วัน`);
