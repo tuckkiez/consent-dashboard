@@ -198,8 +198,8 @@ async def ensure_user_data_exists(date: str):
             print(f"Debug - Created export job: {job_id}")
             
             # Wait for job completion
-            max_retries = 10
-            retry_delay = 2  # seconds
+            max_retries = 100
+            retry_delay = 5  # seconds
             
             for i in range(max_retries):
                 print(f"Debug - Checking job status (attempt {i+1}/{max_retries})")
