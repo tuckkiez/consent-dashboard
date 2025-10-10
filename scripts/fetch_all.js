@@ -46,12 +46,14 @@ function parseDate(dateStr) {
 }
 
 async function fetchAllDates() {
-    // วันที่เริ่มต้น (27/02/2025)
-    const startDate = parseDate('09/10/2025');
-
-    // วันที่สิ้นสุด (เมื่อวานของวันนี้)
+    // วันที่เริ่มต้น (เมื่อวาน - ย้อนหลัง 1 วัน)
     const now = new Date();
     const thaiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+    const startDate = new Date(thaiDate);
+    startDate.setDate(startDate.getDate() - 1); // เมื่อวาน
+    startDate.setHours(0, 0, 0, 0);
+
+    // วันที่สิ้นสุด (เมื่อวานของวันนี้)
     const endDate = new Date(thaiDate);
     endDate.setDate(endDate.getDate() - 1); // เมื่อวาน
     endDate.setHours(0, 0, 0, 0);

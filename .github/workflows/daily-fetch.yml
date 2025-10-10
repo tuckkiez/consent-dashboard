@@ -2,9 +2,7 @@ name: Daily Data Fetch
 
 on:
   schedule:
-    # รันทุกวันเวลา 8 โมงเช้าเวลาไทย (1:00 UTC)
-    - cron: '0 1 * * *'
-    # รันทุกวันเวลา 05:00 น. ตามเวลาไทย (22:00 UTC)
+    # รันทุกวันเวลา 05:00 น. ตามเวลาไทย (22:00 UTC วันก่อนหน้า)
     - cron: '0 22 * * *'
   # อนุญาตให้รันด้วยตนเองได้
   workflow_dispatch:
@@ -29,11 +27,18 @@ jobs:
       run: |
         npm ci --production=false
         
+    - name: Calculate yesterday's date
+      id: date
+      run: |
+        YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
+        echo "yesterday=$YESTERDAY" >> $GITHUB_OUTPUT
+        echo "Will fetch data for: $YESTERDAY"
+        
     - name: Run daily fetch (yesterday only)
-      working-directory: ./scripts
       run: |
         echo "Using API_BASE_URL: https://consent-dashboard.onrender.com"
-        node fetch_all.js
+        echo "Fetching data for date: ${{ steps.date.outputs.yesterday }}"
+        node refetch_one.js ${{ steps.date.outputs.yesterday }}
       env:
         NODE_ENV: production
         API_BASE_URL: https://consent-dashboard.onrender.com
