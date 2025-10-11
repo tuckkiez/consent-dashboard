@@ -27,11 +27,15 @@ jobs:
       run: |
         npm ci --production=false
         
-    - name: Calculate yesterday's date
+    - name: Calculate yesterday's date (Thailand timezone)
       id: date
       run: |
+        # ตั้งค่า timezone เป็นเวลาไทย
+        export TZ='Asia/Bangkok'
+        # คำนวณวันเมื่อวานตามเวลาไทย
         YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
         echo "yesterday=$YESTERDAY" >> $GITHUB_OUTPUT
+        echo "Current time in Thailand: $(date)"
         echo "Will fetch data for: $YESTERDAY"
         
     - name: Run daily fetch (yesterday only)
