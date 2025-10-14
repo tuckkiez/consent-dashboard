@@ -447,12 +447,21 @@ async def fetch_consent_data(date: str):
     
     # ลองโหลดข้อมูล CSV
     try:
-        # ใช้ date ที่รับเข้ามาแทนการใช้วันที่ปัจจุบัน
-        df = load_user_data(date)
+        # ใช้ CSV ของวันถัดไป (หรือวันล่าสุด) เพื่อให้มีข้อมูล users ที่ให้ consent ในวันนี้
+        # เพราะ user ที่ให้ consent วันที่ X จะถูกเพิ่มเข้า Auth0 ในวันที่ X
+        # แต่ CSV ของวันที่ X อาจยังไม่มี user เหล่านี้ ต้องใช้ CSV วันถัดไป
+        from datetime import datetime, timedelta
+        fetch_date = datetime.strptime(date, "%Y-%m-%d")
+        csv_date = (fetch_date + timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        print(f"Debug - กำลังดึงข้อมูล consent ของวันที่ {date}")
+        print(f"Debug - จะใช้ CSV ของวันที่ {csv_date} (วันถัดไป)")
+        
+        df = load_user_data(csv_date)
         if df is None:
-            print(f"Debug - ไม่พบไฟล์ CSV สำหรับวันที่ {date} จะลองดาวน์โหลดใหม่")
-            await ensure_user_data_exists(date)
-            df = load_user_data(date)
+            print(f"Debug - ไม่พบไฟล์ CSV สำหรับวันที่ {csv_date} จะลองดาวน์โหลดใหม่")
+            await ensure_user_data_exists(csv_date)
+            df = load_user_data(csv_date)
         
         if df is not None:
             print(f"Debug - พบข้อมูล CSV columns: {df.columns.tolist()}")
