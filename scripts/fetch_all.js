@@ -45,18 +45,44 @@ function parseDate(dateStr) {
     return new Date(year, month - 1, day);
 }
 
-async function fetchAllDates() {
-    // วันที่เริ่มต้น (เมื่อวาน - ย้อนหลัง 1 วัน)
-    const now = new Date();
-    const thaiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-    const startDate = new Date(thaiDate);
-    startDate.setDate(startDate.getDate() - 1); // เมื่อวาน
-    startDate.setHours(0, 0, 0, 0);
+function toMidnight(dateLike) {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) {
+        throw new Error(`ไม่สามารถแปลงวันที่ได้: ${dateLike}`);
+    }
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
 
-    // วันที่สิ้นสุด (เมื่อวานของวันนี้)
-    const endDate = new Date(thaiDate);
-    endDate.setDate(endDate.getDate() - 1); // เมื่อวาน
-    endDate.setHours(0, 0, 0, 0);
+async function fetchAllDates(startDateStr, endDateStr) {
+    let startDate;
+    let endDate;
+
+    if (startDateStr) {
+        startDate = toMidnight(startDateStr);
+    }
+    if (endDateStr) {
+        endDate = toMidnight(endDateStr);
+    }
+
+    if (!startDate || !endDate) {
+        // วันที่เริ่มต้นและสิ้นสุดเริ่มต้นเป็นเมื่อวาน (ตามเวลาไทย)
+        const now = new Date();
+        const thaiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+        const yesterday = new Date(thaiDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+
+        startDate = startDate || new Date(yesterday);
+        endDate = endDate || new Date(yesterday);
+    }
+
+    if (startDate > endDate) {
+        console.warn(`คำเตือน: start-date (${formatDate(startDate)}) มากกว่า end-date (${formatDate(endDate)}), จะสลับให้โดยอัตโนมัติ`);
+        const tmp = startDate;
+        startDate = endDate;
+        endDate = tmp;
+    }
 
     console.log(`กำลังดึงข้อมูลตั้งแต่วันที่ ${formatDate(startDate)} ถึง ${formatDate(endDate)}`);
 
@@ -142,6 +168,5 @@ async function refetchSingleDate(dateStr) {
 
 module.exports = {
     fetchAllDates,
-    refetchSingleDate,
     refetchSingleDate
 };
