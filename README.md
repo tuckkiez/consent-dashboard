@@ -33,7 +33,7 @@ uvicorn main:app --port 8001 --reload
 #### Frontend
 ```bash
 cd frontend
-python -m http.server 3000
+python3.10 -m http.server 3000
 ```
 
 เข้าใช้งานที่ http://localhost:3000
