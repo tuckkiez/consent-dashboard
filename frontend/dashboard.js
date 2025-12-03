@@ -12,6 +12,25 @@ const LoadingModal = () => (
 function DashboardView({ data, chartData }) {
     if (!data) return null;
 
+    // Aggregate daily total consents into monthly totals
+    const aggregateMonthlyTotals = (dailyData) => {
+        const monthlyMap = {};
+
+        dailyData.forEach(d => {
+            if (!d.date) return;
+            const monthKey = d.date.slice(0, 7); // YYYY-MM
+            if (!monthlyMap[monthKey]) {
+                monthlyMap[monthKey] = 0;
+            }
+            monthlyMap[monthKey] += d.total_consents || 0;
+        });
+
+        const months = Object.keys(monthlyMap).sort();
+        const totals = months.map(m => monthlyMap[m]);
+
+        return { months, totals };
+    };
+
     useEffect(() => {
         if (!chartData || chartData.length === 0) return;
 
@@ -117,6 +136,52 @@ function DashboardView({ data, chartData }) {
                 cutout: '65%'
             }
         });
+
+        // Create Monthly Total Consents Chart
+        const { months, totals } = aggregateMonthlyTotals(chartData);
+        const monthlyCanvas = document.getElementById('monthlyTotalConsents');
+        if (monthlyCanvas && months.length > 0) {
+            const monthlyCtx = monthlyCanvas.getContext('2d');
+            new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Total Consents Per Month',
+                        data: totals,
+                        backgroundColor: '#22c55e55',
+                        borderColor: '#22c55e',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: (value, index) => {
+                                    const label = months[index]; // YYYY-MM
+                                    const [year, month] = label.split('-');
+                                    return `${month}/${year}`; // MM/YYYY
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => new Intl.NumberFormat().format(value)
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }, [chartData, data]);
 
     const formatNumber = (num) => {
@@ -220,6 +285,16 @@ function DashboardView({ data, chartData }) {
                             <h3 className="text-lg font-semibold mb-4 text-gray-700">Total Consents Per Day</h3>
                             <div className="h-64">
                                 <canvas id="totalConsents"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Monthly Chart - full width */}
+                    <div className="lg:col-span-3 mt-6">
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <h3 className="text-lg font-semibold mb-4 text-gray-700">Total Consents Per Month</h3>
+                            <div className="h-64">
+                                <canvas id="monthlyTotalConsents"></canvas>
                             </div>
                         </div>
                     </div>
